@@ -116,19 +116,21 @@ num_classes = 4
 model = get_model(img_size, num_classes)
 model.summary()
 
-## Compilation avec 
+## Compilation 
+# Essayer avec d'autres optimiseurs ou optimiseur personalisé
+# autre fonction de perte / metrique perso 
 
 model.compile(optimizer="adam", loss="binary_crossentropy", metrics=[dice_coef])
 
 
 # In[ ]:
 
-
+batch_size=32
 history = model.fit_generator(
      train_generator,
      validation_data=val_generator,
      steps_per_epoch = len(train_idx)//batch_size,
-     validation_steps = len(train_idx)//batch_size,
+     validation_steps = len(val_idx)//batch_size,
      epochs=10)
 
 
