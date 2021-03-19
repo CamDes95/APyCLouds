@@ -13,9 +13,7 @@ from keras.layers.pooling import MaxPooling2D
 def get_model(img_size, num_classes):
     
     inputs = keras.Input(shape=img_size)
-    
-    # pierre
-    x = tf.transpose(inputs, [0,2,3,1])
+  
 
     # Input
     x = layers.Conv2D(32, 3, strides=2, padding="same")(inputs)
