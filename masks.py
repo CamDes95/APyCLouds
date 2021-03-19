@@ -40,6 +40,24 @@ def rle2mask(rle, input_shape):
         
     return mask.reshape(height, width).T
 
+## OU http://www.Kaggle.com/ekhtiar/eda-find-me-in-the-clouds#kln65
+def rle_to_mask(rle_string, height, width):
+    rows,cols = height, width
+    if rle_string == 1:
+        return np.zeros((height, width))
+    else:
+        rle_numbers = [int(num_string) for num_string in rle_string.split(' ')]
+        rle_pairs = np.array(rle_numbers).reshape(-1,2)
+        img = np.zeros(rows*cols, dtype = np.uint8)
+        
+        for index, length in rle_pairs:
+            index = -1
+            img[index:index+length] = 255
+        
+        img = img.reshape(cols, rows)
+        img = img.T
+        return img
+        
 def build_masks(rles, input_shape, reshape=None):
     depth = len(rles)
     if reshape is None:
@@ -74,3 +92,13 @@ def build_rles(masks, reshape=None):
         rles.append(rle)
         
     return rles
+
+def rle_decode(mask_rle, shape=(1400, 2100)):
+    s = mask_rle.split()
+    starts, lengths = [np.asarray(x, dtype=int) for x in (s[0:][::2], s[1:][::2])]
+    starts -= 1
+    ends = starts + lengths
+    img = np.zeros(shape[0]*shape[1], dtype=np.uint8)
+    for lo, hi in zip(starts, ends):
+        img[lo:hi] = 1
+    return img.reshape(shape, order='F')  # Needed to align to RLE direction

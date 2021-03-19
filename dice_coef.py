@@ -4,7 +4,8 @@
 #  https://lars76.github.io/neural-networks/object-detection/losses-for-segmentation/
 import numpy as np
 import pandas as pd
-
+import tensorflow as tf
+from tensorflow.keras.losses import binary_crossentropy
 from keras import backend as K
 
 def dice_coef(y_true, y_pred, smooth=1):
