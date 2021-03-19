@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import cv2
 
 def post_process(probability, threshold, min_size):
     """

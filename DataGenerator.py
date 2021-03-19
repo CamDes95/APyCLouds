@@ -13,7 +13,7 @@ import albumentations as albu
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_IDs, df, target_df=None, mode='fit',
-                 base_path='./train_images',
+                 base_path='./train_images/',
                  batch_size=32, dim=(1400, 2100), n_channels=3, reshape=None, gamma=None,
                  augment=False, n_classes=4, random_state=2021, shuffle=True):
         self.dim = dim
