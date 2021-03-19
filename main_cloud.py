@@ -1,41 +1,10 @@
-import os
-os.chdir("./Desktop/APyClouds/understanding_cloud_organization")
+#import os
+#os.chdir("./Desktop/APyClouds/understanding_cloud_organization")
 
 get_ipython().run_line_magic('env', 'SM_FRAMEWORK=tf.keras')
-import numpy as np
-import pandas as pd
-import os
-import json
+from modules import *
 
-import cv2
-import keras
-from keras import backend as K
-from keras.models import Model
-from keras.layers import Input
-from keras.layers.convolutional import Conv2D, Conv2DTranspose
-from keras.layers.pooling import MaxPooling2D
-from keras.layers.merge import concatenate
-from keras.losses import binary_crossentropy
-from keras.callbacks import Callback, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
-from skimage.exposure import adjust_gamma
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-from sklearn.model_selection import train_test_split
-import segmentation_models as sm
-import albumentations as albu
-from keras.optimizers import Adam
-
-
-from post_process import *
-from masks import *
-from DataGenerator import *
-from dice_coef import *
-from UNetlike import *
-from CloudImage import cloudImage
-from catalogueImage import catalogueImage
-
+# Importation et modification dataset train 
 df_train = pd.read_csv("train.csv")
    
 df_train['ImageID']          =   df_train['Image_Label'].apply(lambda col: col.split('_')[0])
@@ -52,7 +21,8 @@ sub_df['ImageID'] = sub_df['Image_Label'].apply(lambda x: x.split('_')[0])
 test_imgs = pd.DataFrame(sub_df['ImageID'].unique(), columns=['ImageID'])
 print(test_imgs)
 
-### Première observation des masques de train
+
+# Première observation des masques de train
 def decode(mask, shape=(1400, 2100)):
     m = mask.split()
     a = list()
@@ -69,12 +39,10 @@ def decode(mask, shape=(1400, 2100)):
     image = image.reshape(shape, order='F') 
     return image
 
-##Visualiser masques de train
+#Visualiser masques de train
 
 train_img_path = "./train_images/"
-
 plt.figure(figsize=[60, 30])
-
 for i, row in df_train[:16].iterrows():
     img = cv2.imread(train_img_path +  row['ImageID'])
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -83,7 +51,6 @@ for i, row in df_train[:16].iterrows():
         mask = decode(enc_pix)
     except:
         mask = np.zeros((1400, 2100))
-        
     plt.subplot(4, 4, i+1)
     plt.imshow(img)
     plt.imshow(mask, alpha=0.6, cmap='gray')
@@ -91,7 +58,9 @@ for i, row in df_train[:16].iterrows():
     plt.axis('off')    
 plt.show()
 
-## Séparation des variables
+
+
+##### Séparation des variables
 
 df_train2 = df_train.iloc[:3000, :]
 
@@ -99,12 +68,12 @@ mask_count_df = df_train.groupby('ImageID').agg(np.sum).reset_index()
 mask_count_df.sort_values('PatternPresence', ascending=False, inplace=True)
 print(mask_count_df.index)
 
+# Séparation des variables train et val
+
+train_idx, val_idx = train_test_split(mask_count_df.index, random_state=234, test_size=0.2) #ratify=strat
 
 
-### Séparation des variables train et val
-
-train_idx, val_idx = train_test_split(mask_count_df.index, random_state=123, test_size=0.2) #ratify=strat
-
+# Instanciation DataGenerator
 train_generator = DataGenerator(
     train_idx, 
     df=mask_count_df,
@@ -123,9 +92,8 @@ val_generator = DataGenerator(
     n_channels=3,
     n_classes=4)
 
-
-## Définition du modèle UNet like
-### TESTER AVEC UNET, RESNET
+##### Définition du modèle UNet like #####
+# TESTER AVEC UNET, RESNET
 
 img_size=(320,480)
 num_classes = 4
@@ -133,18 +101,19 @@ num_classes = 4
 model = get_model(img_size, num_classes)
 model.summary()
 
-## Compilation  
+# Compilation  
 
 model.compile(optimizer="adam", loss="binary_crossentropy", metrics=[dice_coef])
 # model.compile(optimizer=Adam(lr = 3e-4), loss="binary_crossentropy", metrics=[dice_coef])
 # Test avec binary_crossentropy, sparse_categorical_entropy
 
-#### ENTRAINEMENT ####
+
+##### ENTRAINEMENT #####
 
 history = model.fit_generator(
      train_generator,
      validation_data=val_generator,
-     epochs=5,
+     epochs=10,
      verbose=1)
 
 # fonction de perte et dice_coeff
@@ -171,10 +140,7 @@ model.save("first_iteration_model2.h5", include_optimizer = False)
 
 
 
-
-
-
-#### PREDICTION ####
+##### PREDICTION #####
 
 
 ### Stockage des pixels encodés dans sub_df 
