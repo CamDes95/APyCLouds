@@ -1,28 +1,3 @@
-"""
-AutoEncoder : 
-=> compresser img dans un petit vecteur (couches de convolution : SeparableCOnv)
-convlution séparable = une image pr chq filtre séparement
-1 neurone dans convol séparable va prédire une image
-=> Trés efficace en terme de temps de calcul
-=> décompression du vecteur pour obtenir l'image originale (Conv2DTranspose puis UpSampling)
-Conv2Dtranspose = génére une grande matrice à partir d'une petite
-=> si input = 2x2, kernel = 3,3 => output = 4x4
-Upsampling = augmente la taille de la matrice (ex : matrice 2x2 devient 4x4)
-===> Entraînement du modèle à prédire l'image d'origine (pas de classif !!!!)
-     Enleve du bruit dans une image!
-Aprés entraînement, on enléve la 2e moitiée (=décompression) et ajout couches classif
-Bénéfices : 
-- utile pour transfer learning
-- enlève le bruit dans l'image
-- utile pour la segmentation 
-=> prédiction du masque de segmentation de l'image et vérification si correct ou pas
-=> Prédiction de 4 masques, pas de masques= img noire
-strides de 2 de Conv2D = pas des pixels de 2 au lieu de 1 
-==> output 2x plus petit que img originale, si input = 160,160 output = 80,80
-+ stride élevé et plus taille de output petit
-Unet = AutoEncoder spécial
-"""
-
 import os
 os.chdir("./Desktop/APyClouds/understanding_cloud_organization")
 
@@ -77,6 +52,44 @@ sub_df['ImageID'] = sub_df['Image_Label'].apply(lambda x: x.split('_')[0])
 test_imgs = pd.DataFrame(sub_df['ImageID'].unique(), columns=['ImageID'])
 print(test_imgs)
 
+### Première observation des masques de train
+def decode(mask, shape=(1400, 2100)):
+    m = mask.split()
+    a = list()
+    
+    for x in (m[0:][::2], m[1:][::2]):
+        a.append(np.asarray(x, dtype=int))
+    starts, lengths = a
+    starts -= 1
+    stop = starts + lengths
+    image = np.zeros(shape[0]*shape[1], dtype=np.uint8)
+    
+    for i, j in zip(starts, stop):
+        image[i:j] = 1   
+    image = image.reshape(shape, order='F') 
+    return image
+
+##Visualiser masques de train
+
+train_img_path = "./train_images/"
+
+plt.figure(figsize=[60, 30])
+
+for i, row in df_train[:16].iterrows():
+    img = cv2.imread(train_img_path +  row['ImageID'])
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    enc_pix = row['EncodedPixels']
+    try:
+        mask = decode(enc_pix)
+    except:
+        mask = np.zeros((1400, 2100))
+        
+    plt.subplot(4, 4, i+1)
+    plt.imshow(img)
+    plt.imshow(mask, alpha=0.6, cmap='gray')
+    plt.title("Label %s" % row['PatternId'], fontsize=32)
+    plt.axis('off')    
+plt.show()
 
 ## Séparation des variables
 
@@ -86,31 +99,9 @@ mask_count_df = df_train.groupby('ImageID').agg(np.sum).reset_index()
 mask_count_df.sort_values('PatternPresence', ascending=False, inplace=True)
 print(mask_count_df.index)
 
-"""
-## Encodage OneHot des classes
-# http://www.kaggle.com/saneryee/understanding-clouds-keras-unet
 
-train_ohe_df = df_train2[~ df_train2['EncodedPixels'].isnull()]
-classes = train_ohe_df['PatternId'].unique()
-train_ohe_df = train_ohe_df.groupby('ImageID')['PatternId'].agg(set).reset_index()
 
-for class_name in classes:
-    train_ohe_df[class_name] = train_ohe_df['PatternId'].map(lambda x: 1 if class_name in x else 0)
-print(train_ohe_df.shape)
-print(train_ohe_df.head())
-
-# dictionary for fast access to ohe vectors
-# key: ImageId
-# value: ohe value
-# {'0011165.jpg': array([1, 1, 0, 0]),
-# '002be4f.jpg': array([1, 1, 1, 0]),...}
-img_to_ohe_vector = {img: vec for img, vec in zip(train_ohe_df['ImageID'], train_ohe_df.iloc[:, 2:].values)}
-"""
-
-### Séparation statifiée des variables train et val
-
-#trat = train_ohe_df["PatternId"].map(lambda x: str(sorted(list(x))))
-#print(strat)
+### Séparation des variables train et val
 
 train_idx, val_idx = train_test_split(mask_count_df.index, random_state=123, test_size=0.2) #ratify=strat
 
@@ -136,7 +127,7 @@ val_generator = DataGenerator(
 ## Définition du modèle UNet like
 ### TESTER AVEC UNET, RESNET
 
-img_size=(320,480,3)
+img_size=(320,480)
 num_classes = 4
 
 model = get_model(img_size, num_classes)
@@ -173,10 +164,17 @@ plt.xlabel("epochs")
 plt.ylabel("dice coef")
 plt.show();
 
+## Sauvegarde des poids du modèle et du modèle
+model.save_weights("model2_weights.h5")
+model.save("first_iteration_model2.h5", include_optimizer = False)
+
+
+
+
+
 
 
 #### PREDICTION ####
-
 
 
 ### Stockage des pixels encodés dans sub_df 
@@ -238,63 +236,51 @@ for i in range(0, test_imgs.shape[0], TEST_BATCH_SIZE):
 
 sub_df['EncodedPixels'] = encoded_pixels
 
-
-## Export des résultats en csv
-sub_df.to_csv("sample_submission_test1.csv")
-
-## Faire appraître les NaN
-sub_df = pd.read_csv("test1_sample_submission.csv")
-
-sub_df['FileName']          =   sub_df['Image_Label'].apply(lambda col: col.split('_')[0])
-sub_df['PatternId']         =   sub_df['Image_Label'].apply(lambda col: col.split('_')[1])
-sub_df['PatternPresence']   = ~ sub_df['EncodedPixels'].isna()
-
+sub_df = sub_df.drop(["Unnamed: 0", "Unnamed: 0.1"], axis=1)
 sub_df.head()
 
 
-### Observation des résultats
+## Export des résultats en csv
+sub_df.to_csv("sample_submission_test2.csv")
+
+# On garde slmt les lignes avec des masques
+sub_df_2 = sub_df[sub_df['EncodedPixels'].notnull()]
+sub_df_2["ImageID"] = sub_df["ImageID"]
+
+
+
+
+"""
+A TESTER 
+
+## Tests visualisation
+df_train["Label_EncodedPixels"] = df_train.apply(lambda row: (row["PatternId"], row["EncodedPixels"]), axis=1)
+print(df_train)
+
+# df avec label nuage et pixels associés
+EncodedPixels_group = df_train.groupby("ImageID")["Label_EncodedPixels"].apply(list)
+print(EncodedPixels_group)
+"""
+
+
+### Observation des résultats : masques de test
+# Mauvaise visualisation, à résoudre !!!!!!
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 sns.set_style("white")
-plt.figure(figsize=[60, 20])
-for index, row in sub_df[:8].iterrows():
+plt.figure(figsize=(50, 40))
+for index, row in sub_df_2[:16].iterrows():
     img = cv2.imread("./test_images/%s" % row['ImageID'])[...,[2, 1, 0]]
     img = cv2.resize(img, (525, 350))
     mask_rle = row['EncodedPixels']
-    try: # label might not be there!
-        mask = rle_decode(mask_rle)
-    except:
-        mask = np.zeros((1400, 2100))
-    plt.subplot(2, 4, index+1)
+    mask = rle_decode(mask_rle)
+    
+    plt.subplot(4, 4, index+1)
     plt.imshow(img)
     plt.imshow(rle2mask(mask_rle, img.shape), alpha=0.5, cmap='gray')
     plt.title("Image %s" % (row['Image_Label']), fontsize=18)
     plt.axis('off')     
 plt.show();
 
-sns.set_style("white")
-plt.figure(figsize=[60, 20])
-for index, row in df_train[:8].iterrows():
-    img = cv2.imread("./train_images/%s" % row['ImageID'])[...,[2, 1, 0]]
-    img = cv2.resize(img, (525, 350))
-    mask_rle = row['EncodedPixels']
-    try: # label might not be there!
-        mask = rle_decode(mask_rle)
-    except:
-        mask = np.zeros((1400, 2100))
-    plt.subplot(2, 4, index+1)
-    plt.imshow(img)
-    plt.imshow(rle2mask(mask_rle, img.shape), alpha=0.5, cmap='gray')
-    plt.title("Image %s" % (row['Image_Label']), fontsize=18)
-    plt.axis('off')     
-plt.show();
-
-## OU
-c = catalogueImage(dataFrame=sub_df, indexes = range(0,5), path="./test_images/")
-c.visualizeCatalogue()
-
-# visualisation masques entraînement
-df_train["FileName"] = df_train["ImageID"].astype("str")
-c = catalogueImage(path="./train_images/", indexes = range(0,5), dataFrame = df_train )
-c.visualizeCatalogue()
