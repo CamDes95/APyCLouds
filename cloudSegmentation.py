@@ -48,11 +48,12 @@ model.compile(optimizer=optimizer,
               #loss='categorical_crossentropy',
               metrics=['accuracy'])
 
-data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(500),
+n_train = 4800
+data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(n_train),
                                 list_images=name_images,
                                 dim=reduced_size,
                                 batch_size=16)
-val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(4500, 4700),
+val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(n_train, n_images),
                                 list_images=name_images,
                                 dim=reduced_size,
                                 batch_size=16)
@@ -61,7 +62,7 @@ TON = callbacks.TerminateOnNaN()
 
 
 def decreasinglrUpdate(epoch, learning_rate):
-    if epoch % 3 == 0:
+    if epoch % 3 == 0 & epoch>0:
         return learning_rate * 0.1
     else:
         return learning_rate
@@ -70,6 +71,6 @@ def decreasinglrUpdate(epoch, learning_rate):
 lrScheduler = callbacks.LearningRateScheduler(schedule=decreasinglrUpdate,
                                               verbose=1)
 
-history = model.fit(data_gen, epochs=2, callbacks=[TON]) #, validation_data=val_gen) # , validation_data=val_gen) #, callbacks=callbacks)
+history = model.fit_generator(data_gen, epochs=10, callbacks=[TON, lrScheduler], validation_data=val_gen) # , validation_data=val_gen) #, callbacks=callbacks)
 print(history.history['accuracy'])
 model.save('model_UNet.hdf5')
