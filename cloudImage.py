@@ -82,11 +82,11 @@ class cloudImage:
                     arr = np.where(arr > 1, 1, arr)
                     im_array[:,:,ind] = np.asarray(arr)
 
-        pil_im = Image.open(self.fileNameTaskWithPath, 'r')
+        """pil_im = Image.open(self.fileNameTaskWithPath, 'r')
         arr = np.asarray(pil_im)
         arr = np.where(arr > 1, 1, arr)
         if is_mask==True:
-            im_array[:, :, -1] = np.asarray(arr)
+            im_array[:, :, -1] = np.asarray(arr)"""
 
         return im_array
 
