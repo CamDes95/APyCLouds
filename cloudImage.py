@@ -1,7 +1,8 @@
-from PIL import Image
+from PIL import Image, ImageFilter
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import os
 
 
 class cloudImage:
@@ -19,10 +20,12 @@ class cloudImage:
         self.fileNameMaskWithPath = []
         for p in self.patternList:
             self.fileNameMaskWithPath.append(mask_path+fileName.split('.')[0] + '_' + p + '.jpg')
+        self.fileNameTaskWithPath = mask_path + fileName.split('.')[0] + "_task.png"
         # Colors of the masks
         self.ColorList = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [.5, 0, .3]]
         self.boxes = {'pattern': [], 'mask': []}  # masks per class
         self.data = []
+        self.taskImage = [] # estimation of the task, present in some images
 
         if not dataFrame.empty:
             # Reduces the data frame to 4 lines corresponding to fileName
@@ -34,12 +37,26 @@ class cloudImage:
                 self.containsPattern.append(self.df_image[self.df_image.PatternId == p].PatternPresence)
 
     def indexPattern(self, pattern):
+        """
+        :param pattern: string corresponding to the pattern ('Fish', ...)
+        :return: index of the pattern in the list of pattern
+        """
         return self.patternList.index(pattern)
 
     def hasPattern(self, pattern):
+        """
+        :param pattern: string corresponding to the pattern ('Fish', ...)
+        :return: boolean if pattern is present in current image
+        """
         return self.containsPattern[self.indexPattern(pattern)]
 
-    def load(self, is_mask=False):
+
+    def load(self, is_mask=False, augmented=False):
+        """
+        Open jpg image, resize if any, return an np array
+        :param is_mask: True if mask, False if cloud image
+        :return: image as numpy array
+        """
         if is_mask==False:
             fileNameWithPath = [self.fileNameWithPath]
         else:
@@ -64,9 +81,23 @@ class cloudImage:
                     arr = np.asarray(pil_im)
                     arr = np.where(arr > 1, 1, arr)
                     im_array[:,:,ind] = np.asarray(arr)
+
+        pil_im = Image.open(self.fileNameTaskWithPath, 'r')
+        arr = np.asarray(pil_im)
+        arr = np.where(arr > 1, 1, arr)
+        if is_mask==True:
+            im_array[:, :, -1] = np.asarray(arr)
+
         return im_array
 
+    def transformImage(self, im):
+
+
     def visualize(self):
+        """
+        show cloud image
+        :return: show the image
+        """
         data = [load(self) if self.data==[] else self.data]
         plt.imshow(data, alpha=3.)
         plt.axis(False)
@@ -90,22 +121,26 @@ class cloudImage:
         arrayEncodedPixels = np.array(self.df_image.EncodedPixels)
         self.boxes['mask'] = []
 
+        # if we have build object with a new size, the masks will have this new size
         if (self.new_size != [0, 0]):
             new_size = self.new_size
+        # otherwise we keep the original size
         else:
             new_size = [self.h, self.w]
 
         for index_pattern, pattern in enumerate(self.patternList):
-
             if self.hasPattern(pattern).item():
                 # initialisation mask
                 self.boxes['mask'].append(np.uint8(np.zeros(shape=(self.h, self.w))))
                 # extract the corresponding encodedPixels
                 encodedPixels = np.fromstring(arrayEncodedPixels[index_pattern], sep=" ")
 
+                # one point over two, from the first element
                 indexStartPixels = encodedPixels[::2]
+                # one point over two, from the second element
                 lengthLine = encodedPixels[1::2]
 
+                # loop to build, line by line, the masks, froms encodedPixels data of the dataframe
                 for ind_ind, start_ind in enumerate(indexStartPixels):
                     row_start = int((start_ind - 1) % self.h)
                     col       = int((start_ind - 1) // self.h)
@@ -119,8 +154,9 @@ class cloudImage:
             self.boxes['pattern'].append(pattern)
             index_pattern += 1
 
+        # self.boxes['mask'].append()
+
     def saveMaskAsJPG(self):
-        import os
         try:
             if not (os.path.isdir(self.mask_path)):
                 # Création répertoire
@@ -141,7 +177,6 @@ class cloudImage:
             im.save(name_image)
 
     def saveReducedImageAsJPG(self, images_dir):
-        import os
         try:
             if not (os.path.isdir(images_dir)):
                 # Création répertoire
@@ -151,5 +186,15 @@ class cloudImage:
 
         if self.resize_jpg!=[0,0]:
             im = Image.open(self.fileNameWithPath, 'r').convert('L')
+
+            """
+            # estimation of the task
+            mask = Image.eval(im.filter(ImageFilter.MedianFilter).filter(ImageFilter.MedianFilter),
+                              (lambda x: 255 if x<10 else 0)).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MinFilter(3))
+            mask = mask.resize(self.resize_jpg, resample=Image.NEAREST)
+            mask = mask.convert('L')
+            mask = Image.eval(mask, (lambda x: 1 if x >= 128 else 0))
+            mask.save(self.mask_path + self.fileName.split('.')[0] + "_task.png")"""
+
             im = im.resize(self.resize_jpg)
-            im.save(images_dir+self.fileName)
+            im.save(images_dir + self.fileName)
