@@ -27,8 +27,8 @@ for index_image in range(n_images):
                                dataFrame=df_train,
                                new_size=reduced_size)
     im.computeBoxCoordinates()
-    im.saveMaskAsJPG()
     im.saveReducedImageAsJPG("reduced_train_images/")
+    im.saveMaskAsJPG()
 
 validation_dir = "test_images/"
 name_images = os.listdir(validation_dir)
