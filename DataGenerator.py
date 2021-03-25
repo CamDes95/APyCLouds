@@ -1,16 +1,14 @@
 
 # Datagenerator de Ying : https://www.kaggle.com/gogo827jz/resunet-keras-with-some-new-ideas
 
-import keras
+import tensorflow.keras
 import numpy as np
 import pandas as pd
 import cv2
-from masks import *
-from post_process import *
 from skimage.exposure import adjust_gamma
 import albumentations as albu
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self, list_IDs, df, target_df=None, mode='fit',
                  base_path='./train_images/',
