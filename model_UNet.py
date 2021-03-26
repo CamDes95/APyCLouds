@@ -6,8 +6,8 @@ Model not compiled here, instead will be done externally to make it
 easy to test various loss functions and optimizers.
 """
 
-from keras.models import Model
-from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Conv2DTranspose, BatchNormalization, \
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Conv2DTranspose, BatchNormalization, \
     Dropout, Lambda
 
 
@@ -45,6 +45,9 @@ def multi_unet_model(n_classes=4, IMG_HEIGHT=1400, IMG_WIDTH=2100, IMG_CHANNELS=
 
     # Expansive path
     u6 = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
+    print(u6.shape)
+    print(c1.shape, c2.shape, c3.shape, c4.shape, c5.shape)
+    print(p1.shape, p2.shape, p3.shape, p4.shape)
     u6 = concatenate([u6, c4])
     c6 = Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(u6)
     c6 = Dropout(0.2)(c6)

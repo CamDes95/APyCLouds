@@ -90,7 +90,7 @@ class cloudImage:
 
         return im_array
 
-    def transformImage(self, im):
+    # def transformImage(self, im):
 
 
     def visualize(self):
