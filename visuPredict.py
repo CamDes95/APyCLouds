@@ -22,7 +22,7 @@ for index_image in range(20):
     X = np.expand_dims(im.load(),axis=0)
     y = model.predict(X)
 
-    plt.subplot(5, 3, 1)
+    plt.subplot(4, 3, 1)
     plt.imshow(np.squeeze(im.load()))
     plt.axis(False)
 
