@@ -1,8 +1,8 @@
 import numpy as np
-import keras
+import tensorflow.keras
 import cloudImage
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
     def __init__(self,
                  list_IDs,
