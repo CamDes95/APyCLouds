@@ -31,8 +31,8 @@ img_augmentation = Sequential(
 )
 
 ################################################################
-input_shape = (160,224,3)
-img_h = 160
+input_shape = (224,224,3)
+img_h = 224
 img_w = 224
 n_channels = 3
 n_classes = 4
@@ -40,12 +40,14 @@ n_classes = 4
 def EfficientNet_model(img_h, img_w, n_channels, n_classes):
 
     inputs = layers.Input(shape=(img_h, img_w, n_channels))
-    s = Lambda(lambda x: x / 255)(inputs)     # Pas besoin si input déjà normalisé
-    s = inputs
+    #s = Lambda(lambda x: x / 255)(inputs)     # Pas besoin si input déjà normalisé
+    #s = inputs
     
-    model = EfficientNetB0(weights = None,   #tester avec imagenet (3 channels)
+    x = img_augmentation(inputs)
+    
+    model = EfficientNetB0(weights = "imagenet",   #tester avec imagenet (3 channels)
                            include_top = False,
-                           input_shape = input_shape)(s)
+                           input_shape = (img_h, img_w, n_channels))(x)
     model.trainable = False
     
     x = layers.UpSampling2D(2)(model)   
@@ -85,7 +87,17 @@ model.summary()
 
 
 
+##########################################
+"""
+EfficientNetB0 : 224*224
+EfficientNetB1 : 240*240
+EfficientNetB2 : 260*260
+EfficientNetB3 : 300*300
+EfficientNetB4 : 380*380
+EfficientNetB5 : 456*456
+EfficientNetB6 : 600*600
 
+"""
 
 
 

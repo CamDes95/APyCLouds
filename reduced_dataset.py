@@ -3,7 +3,7 @@ import cloudImage
 from time import time
 import os
 
-reduced_size = [160, 224]  # height x width
+reduced_size = [224, 224]  # height x width
 
 df_train = pd.read_csv("train.csv")
 

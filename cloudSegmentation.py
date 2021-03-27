@@ -12,6 +12,9 @@ import tensorflow.keras
 import cloudImage
 import dataGeneratorFromClass
 import tensorflow as tf
+import matplotlib.pyplot as plt
+import seaborn as sns
+import cv2
 
 #import visuPredict
 
@@ -25,6 +28,8 @@ Objectif 2eme itération :
 
 
 """ 
+
+#### CHARGEMENT ET MISE EN FORME DONNEES ####
 
 df_train = pd.read_csv("train.csv")
 
@@ -40,9 +45,11 @@ n_images = len(name_images)
 X, y = d.__getitem__(0)"""
 
 
-reduced_size = (160,224)
-input_shape = (160, 224, 3)
-img_h = 160
+#### DEFINITION DU MODELE ####
+
+reduced_size = (224,224)
+
+img_h = 224
 img_w = 224
 n_channels = 3
 n_classes = 4
@@ -66,14 +73,16 @@ model.compile(optimizer=optimizer,
               metrics=[dice_coef])
 
 
+#### GENERATEUR DE DONNEES ####
+
 data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1000),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                batch_size=16)
-val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1200,1400),
+                                batch_size=32)
+val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1001,1201),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                batch_size=16)
+                                batch_size=32)
 
 TON = callbacks.TerminateOnNaN()
 
@@ -89,12 +98,31 @@ lrScheduler = callbacks.LearningRateScheduler(schedule=decreasinglrUpdate,
                                               verbose=1)
 '''
 
+#### ENTRAINEMENT ####
 
 history = model.fit(data_gen,
                     epochs=5,
                     callbacks=[TON],
                     validation_data=val_gen) #, callbacks=callbacks)
 
-print(history.history['accuracy'])
 
-model.save('model_EfficientNet-1.h5')
+# Visualisation loss et dice_coef lors de l'entraînement :
+plt.figure(figsize=(10,5))
+plt.subplot(121)
+plt.plot(history.history["loss"], label = "dice loss")
+plt.plot(history.history["val_loss"], label = "val dice loss")
+plt.xlabel("epochs")
+plt.ylabel("loss function")
+plt.legend()
+
+plt.subplot(122)
+plt.plot(history.history["dice_coef"], label="dice coef", color="red")
+plt.plot(history.history["val_dice_coef"], label="val dice coef", color="green")
+plt.legend()
+plt.xlabel("epochs")
+plt.ylabel("dice coef")
+plt.show();
+
+# Sauvegarde du modèle et des poids
+model.save('model_EffNetB0_1_4_imgnet.h5')
+model.save_weights("model_weights_EffNetB0_1_4_imgnet.h5")
