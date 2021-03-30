@@ -21,67 +21,63 @@ from tensorflow.keras import layers
 
 ### IMAGE AUGMENTATION A TESTER
 img_augmentation = Sequential(
-    [
-        preprocessing.RandomRotation(factor=0.15),
-        preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
-        preprocessing.RandomFlip(),
-        preprocessing.RandomContrast(factor=0.1),
-    ],
-    name="img_augmentation",
-)
+    [preprocessing.RandomRotation(factor=0.15),
+     preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
+     preprocessing.RandomFlip(),
+     preprocessing.RandomContrast(factor=0.1),],
+    name="img_augmentation",)
 
 ################################################################
-input_shape = (224,224,3)
 img_h = 224
 img_w = 224
 n_channels = 3
 n_classes = 4
 
-def EfficientNet_model(img_h, img_w, n_channels, n_classes):
+def EfficientNet_model(img_h, img_w, n_channels, n_classes = 4):
 
-    inputs = layers.Input(shape=(img_h, img_w, n_channels))
+    inputs = layers.Input(shape=(img_h, img_w, 3))
     #s = Lambda(lambda x: x / 255)(inputs)     # Pas besoin si input déjà normalisé
-    #s = inputs
     
     x = img_augmentation(inputs)
     
     model = EfficientNetB0(weights = "imagenet",   #tester avec imagenet (3 channels)
                            include_top = False,
-                           input_shape = (img_h, img_w, n_channels))(x)
+                           input_shape = (img_h, img_w, 3))(x)
     model.trainable = False
     
     x = layers.UpSampling2D(2)(model)   
-    x = Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
+    x = Conv2D(256, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
     
-    x = Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(x)
+    x = Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(x)
     x = layers.Dropout(0.2)(x)
-    x = Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
+    x = Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
              
     x = layers.UpSampling2D(2)(x)
-    x = Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
+    x = Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
     
-    x = Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')(x)
+    x = Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(x)
     x = layers.Dropout(0.2)(x)
-    x = Conv2D(256, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
+    x = Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(x)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
     x = layers.UpSampling2D(2)(x)
 
     # Add a per-pixel classification layer : output
-    outputs = Conv2D(n_classes, 3, activation="softmax", padding="same")(x)
+    #outputs = Conv2D(n_classes, (1,1), activation="softmax", padding="same")(x)
+    outputs = Conv2D(n_classes, (3,3), activation="sigmoid", padding="same")(x)
     
     model = Model(inputs = inputs, outputs = outputs)
     return model
     
     
-model = EfficientNet_model(img_h, img_w, n_channels, n_classes = 4)
+model = EfficientNet_model(img_h, img_w, n_channels, n_classes)
 
 model.summary()
 
@@ -89,7 +85,12 @@ model.summary()
 
 ##########################################
 """
-EfficientNetB0 : 224*224
+EfficientNetB0 : 224*224 
+LR : 1e-3 ok
+LR : 1e-4 moins performant
+LR : 1e-5 à tester
+
+
 EfficientNetB1 : 240*240
 EfficientNetB2 : 260*260
 EfficientNetB3 : 300*300

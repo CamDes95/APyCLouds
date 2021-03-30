@@ -66,20 +66,18 @@ optimizer = tf.keras.optimizers.RMSprop(
     name="RMSprop")
 """
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)  ### lr : 1e-3 1e-4 1e-2
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001) 
 
-model.compile(optimizer=optimizer,
-              loss=bce_dice_loss,
-              metrics=[dice_coef])
+model.compile(optimizer=optimizer, loss=bce_dice_loss, metrics=[dice_coef])
 
 
 #### GENERATEUR DE DONNEES ####
 
-data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1000),
+data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3000),
                                 list_images=name_images,
                                 dim=reduced_size,
                                 batch_size=32)
-val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1001,1201),
+val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3200,4000),
                                 list_images=name_images,
                                 dim=reduced_size,
                                 batch_size=32)
@@ -124,5 +122,5 @@ plt.ylabel("dice coef")
 plt.show();
 
 # Sauvegarde du modèle et des poids
-model.save('model_EffNetB0_1_4_imgnet.h5')
-model.save_weights("model_weights_EffNetB0_1_4_imgnet.h5")
+model.save('model_EffNetB0_3_1_imgnet.h5')
+model.save_weights("model_weights_EffNetB0_3_1_imgnet.h5")
