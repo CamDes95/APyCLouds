@@ -7,6 +7,7 @@ from bce_dice_loss import bce_dice_loss, dice_coef
 import tensorflow as tf
 from tensorflow.keras import callbacks
 from model_EfficientNet import EfficientNet_model
+from model_EfficientNetB2 import EfficientNetB2_model
 import numpy as np
 import tensorflow.keras
 import cloudImage
@@ -16,18 +17,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
 
-#import visuPredict
-
-"""
-Objectif 2eme itération :
-    
-    utiliser transfer learning EfficientNet
-    adapter le learning rate pour meilleurs résultats
-    augmentation des données dans datagenerator
-    activation sigmoid ou softmax a tester xsur output
-
-
-""" 
 
 #### CHARGEMENT ET MISE EN FORME DONNEES ####
 
@@ -47,26 +36,17 @@ X, y = d.__getitem__(0)"""
 
 #### DEFINITION DU MODELE ####
 
-reduced_size = (224,224)
+reduced_size = (256,256)
 
-img_h = 224
-img_w = 224
+img_h = 256
+img_w = 256
 n_channels = 3
 n_classes = 4
 
-model = EfficientNet_model(img_h, img_w, n_channels, n_classes = 4)
+model = EfficientNetB2_model(img_h, img_w, n_channels, n_classes = 4)
 
-"""
-optimizer = tf.keras.optimizers.RMSprop(
-    learning_rate=0.001,
-    rho=0.9,
-    momentum=0.0,
-    epsilon=1e-07,
-    centered=False,
-    name="RMSprop")
-"""
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001) 
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3) 
 
 model.compile(optimizer=optimizer, loss=bce_dice_loss, metrics=[dice_coef])
 
@@ -76,25 +56,15 @@ model.compile(optimizer=optimizer, loss=bce_dice_loss, metrics=[dice_coef])
 data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3000),
                                 list_images=name_images,
                                 dim=reduced_size,
+                                dir_image="reduced_train_images_256/",
                                 batch_size=32)
 val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3200,4000),
                                 list_images=name_images,
                                 dim=reduced_size,
+                                dir_mask="reduced_train_masks_256/",
                                 batch_size=32)
 
 TON = callbacks.TerminateOnNaN()
-
-'''
-def decreasinglrUpdate(epoch, learning_rate):
-    if epoch % 3 == 0:
-        return learning_rate * 0.1
-    else:
-        return learning_rate
-
-
-lrScheduler = callbacks.LearningRateScheduler(schedule=decreasinglrUpdate,
-                                              verbose=1)
-'''
 
 #### ENTRAINEMENT ####
 
@@ -122,5 +92,5 @@ plt.ylabel("dice coef")
 plt.show();
 
 # Sauvegarde du modèle et des poids
-model.save('model_EffNetB0_3_1_imgnet.h5')
-model.save_weights("model_weights_EffNetB0_3_1_imgnet.h5")
+model.save('model_EffNetB0_3_N_imgnet.h5')
+model.save_weights("model_weights_EffNetB0_3_N_imgnet.h5")
