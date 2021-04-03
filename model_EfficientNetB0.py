@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D,Dropout,  MaxPooling2D, UpSampling2D, concatenate, Conv2DTranspose, BatchNormalization, \
@@ -17,8 +16,7 @@ img_augmentation = Sequential(
     [preprocessing.RandomRotation(factor=0.15),
      preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
      preprocessing.RandomFlip(),
-     preprocessing.RandomContrast(factor=0.1),],
-    name="img_augmentation",)
+     preprocessing.RandomContrast(factor=0.1),],)
 
 ################################################################
 img_h = 224
@@ -31,11 +29,11 @@ def EfficientNet_model(img_h, img_w, n_channels, n_classes = 4):
     inputs = layers.Input(shape=(img_h, img_w, 3))
     #s = Lambda(lambda x: x / 255)(inputs)     # Pas besoin si input déjà normalisé
     
-    x = img_augmentation(inputs)
+    #x = img_augmentation(inputs)
     
-    model = EfficientNetB0(weights = "imagenet",   #tester avec imagenet (3 channels)
+    model = EfficientNetB0(weights = "imagenet",   
                            include_top = False,
-                           input_shape = (img_h, img_w, 3))(x)
+                           input_shape = (img_h, img_w, 3))(inputs)
     model.trainable = False
     
     x = layers.UpSampling2D(2)(model)   
@@ -64,7 +62,7 @@ def EfficientNet_model(img_h, img_w, n_channels, n_classes = 4):
 
     # Add a per-pixel classification layer : output
     #outputs = Conv2D(n_classes, (1,1), activation="softmax", padding="same")(x)
-    outputs = Conv2D(n_classes, (3,3), activation="sigmoid", padding="same")(x)
+    outputs = Conv2D(n_classes, (1,1), activation="softmax", padding="same")(x)
     
     model = Model(inputs = inputs, outputs = outputs)
     return model

@@ -20,8 +20,7 @@ img_augmentation = Sequential(
     [preprocessing.RandomRotation(factor=0.15),
      preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
      preprocessing.RandomFlip(),
-     preprocessing.RandomContrast(factor=0.1),],
-    name="img_augmentation",)
+     preprocessing.RandomContrast(factor=0.1),],)
 
 ################################################################
 img_h = 256
@@ -33,7 +32,7 @@ n_classes = 4
 
 def EfficientNetB2_model(img_h, img_w, n_channels, n_classes = 4):
     
-    encoder = EfficientNetB2(weights = "imagenet",
+    encoder = EfficientNetB2(weights = None,
                              include_top = False,
                              input_shape = (img_h, img_w, 3))
     

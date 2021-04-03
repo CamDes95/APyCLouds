@@ -6,6 +6,7 @@ import efficientnet.tfkeras as efn
 from tensorflow.keras.applications import EfficientNetB2, EfficientNetB3, EfficientNetB4, EfficientNetB0
 from tensorflow.keras import Sequential
 from tensorflow.keras import layers
+from tensorflow.keras.preprocessing import image_dataset_from_directory
 
 from tensorflow.keras.layers.experimental import preprocessing
 from tensorflow.keras.models import Sequential
@@ -16,12 +17,14 @@ from tensorflow.keras.applications.efficientnet import preprocess_input
 preprocess_input = preprocess_input
 
 ### IMAGE AUGMENTATION
+
 img_augmentation = Sequential(
     [preprocessing.RandomRotation(factor=0.15),
      preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
      preprocessing.RandomFlip(),
-     preprocessing.RandomContrast(factor=0.1),],
-    name="img_augmentation",)
+     preprocessing.RandomContrast(factor=0.1),],)
+
+
 
 ################################################################
 img_h = 384
@@ -39,10 +42,10 @@ def EfficientNetB4_model(img_h, img_w, n_channels, n_classes = 4):
     
     inputs = layers.Input(shape=(img_h, img_w, 3))
     #s = Lambda(lambda x: x / 255)(inputs)     # Pas besoin si input déjà normalisé
-  # x = img_augmentation(inputs)
+    x = img_augmentation(inputs)
   # x = preprocess_input(x)
 
-    model = encoder(inputs)
+    model = encoder(x)
     model.trainable = False
     
     # Decoder
@@ -77,7 +80,7 @@ def EfficientNetB4_model(img_h, img_w, n_channels, n_classes = 4):
     return model
     
     
-model = EfficientNetB2_model(img_h, img_w, n_channels, n_classes)
+model = EfficientNetB4_model(img_h, img_w, n_channels, n_classes)
 
 model.summary()
 

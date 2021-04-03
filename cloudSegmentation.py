@@ -6,8 +6,9 @@ from time import time
 from bce_dice_loss import bce_dice_loss, dice_coef
 import tensorflow as tf
 from tensorflow.keras import callbacks
-from model_EfficientNet import EfficientNet_model
+from model_EfficientNetB0 import EfficientNet_model
 from model_EfficientNetB2 import EfficientNetB2_model
+from model_EfficientNetB4 import EfficientNetB4_model
 import numpy as np
 import tensorflow.keras
 import cloudImage
@@ -29,6 +30,15 @@ print(df_train.head())
 
 name_images = df_train['FileName'].unique()
 n_images = len(name_images)
+
+# Importation submission et test img
+sub_df = pd.read_csv('sample_submission.csv')
+sub_df['ImageID'] = sub_df['Image_Label'].apply(lambda x: x.split('_')[0])
+
+test_imgs = pd.DataFrame(sub_df['ImageID'].unique(), columns=['ImageID'])
+print(test_imgs)
+
+#name_images_test = sub_df["FileName"].unique()
 
 """d = dataGenerator.DataGenerator(list_IDs=[0], list_images=name_images, dim=reduced_size, batch_size=1)
 X, y = d.__getitem__(0)"""
@@ -63,7 +73,13 @@ val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3200,4000),
                                 dim=reduced_size,
                                 dir_mask="reduced_train_masks_256/",
                                 batch_size=32)
-
+"""
+test_gen = dataGeneratorFromClass.DataGenerator(list_IDs = np.arange(3000),
+                                                list_images = name_images_test,
+                                                dim = reduced_size,
+                                                dir_image = "reduced_test_images_256",
+                                                batch_size = 32)
+"""
 TON = callbacks.TerminateOnNaN()
 
 #### ENTRAINEMENT ####
@@ -92,5 +108,8 @@ plt.ylabel("dice coef")
 plt.show();
 
 # Sauvegarde du modèle et des poids
-model.save('model_EffNetB0_3_N_imgnet.h5')
-model.save_weights("model_weights_EffNetB0_3_N_imgnet.h5")
+model.save('model_EffNetB0_4_N_imgnet.h5')
+model.save_weights("model_weights_EffNetB0_4_N_imgnet.h5")
+
+
+# Performance du modèle sur données test
