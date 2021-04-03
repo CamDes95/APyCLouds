@@ -94,15 +94,14 @@ for index_image in range(20):
                                fileName=test_images2[index_image],
                                height=224, width=224)
     X2 = np.expand_dims(im2.load(),axis=0)
-    y2 = model.predict(np.expand_dims(X2, axis=3))
+    y2 = model2.predict(np.expand_dims(X2, axis=3))
     
     fig1 = plt.figure(figsize=(10,8))
     ax1 = plt.subplot(4, 3, 1)
     ax1.imshow(np.squeeze(im1.load()))
     ax1.axis(False)
     plt.title("Original image")
-    plt.suptitle("EfficientNetB2_4_N - B0_4_N")
-    plt.suptitle("dice_coef : 0.597 _ 0.617")
+    plt.suptitle("EfficientNetB2_4_N - B0_4_N \n dice_coef : 0.597 - 0.617")
     
     patternList = ['Fish', 'Flower', 'Gravel', 'Sugar']
     
