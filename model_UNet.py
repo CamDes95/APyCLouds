@@ -5,18 +5,26 @@ Standard Unet
 Model not compiled here, instead will be done externally to make it
 easy to test various loss functions and optimizers.
 """
-
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Conv2DTranspose, BatchNormalization, \
     Dropout, Lambda
+from tensorflow.keras.layers.experimental import preprocessing 
+from tensorflow.keras.models import Sequential
 
 
 ################################################################
 def multi_unet_model(n_classes=4, IMG_HEIGHT=1400, IMG_WIDTH=2100, IMG_CHANNELS=1):
     # Build the model
     inputs = Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
+    
     s = Lambda(lambda x: x / 255)(inputs)   #No need for this if we normalize our inputs beforehand
     s = inputs
+
+    s = tf.image.random_flip_left_right(s)
+    s = tf.image.random_flip_up_down(s)
+    s = tf.keras.preprocessing.image.random_rotation(s, 30)
+    s = tf.keras.preprocessing.image.random_shift(wrg=0.1, hrg=0.1)
 
     # Contraction path
     c1 = Conv2D(16, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(s)

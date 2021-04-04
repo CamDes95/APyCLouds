@@ -6,19 +6,19 @@ import cloudImage
 from bce_dice_loss import bce_dice_loss
 import time
 
-model = load_model("model_UNet_dice_loss.hdf5", custom_objects={'loss': bce_dice_loss}, compile=False)
+model = load_model("model_UNet_aug_size.hdf5", custom_objects={'loss': bce_dice_loss}, compile=False)
 #model = load_model('model_UNet_2.hdf5')
 
-directory = "reduced_train_images/"
+directory = "reduced_train_images_3/"
 name_images = os.listdir(directory)
 name_images=name_images[1:]
 
 
 for index_image in range(20):
     im = cloudImage.cloudImage(path=directory,
-                               mask_path="reduced_train_masks/",
+                               mask_path="reduced_train_masks_3/",
                                fileName=name_images[index_image],
-                               height=144, width=224)
+                               height=352, width=528)
     X = np.expand_dims(im.load(),axis=0)
     y = model.predict(X)
 

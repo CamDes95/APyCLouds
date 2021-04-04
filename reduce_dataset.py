@@ -4,6 +4,7 @@ from time import time
 import os
 
 reduced_size = [350, 525]  # height x width
+reduced_size = [352, 528]  # height x width
 
 df_train = pd.read_csv("train.csv")
 
@@ -22,12 +23,12 @@ for index_image in range(n_images):
         print(index_image, str(t2-t1))
         t1 = time()
     im = cloudImage.cloudImage(path="train_images/",
-                               mask_path="reduced_train_masks_2/",
+                               mask_path="reduced_train_masks_3/",
                                fileName=name_images[index_image],
                                dataFrame=df_train,
                                new_size=reduced_size)
     im.computeBoxCoordinates()
-    im.saveReducedImageAsJPG("reduced_train_images_2/")
+    im.saveReducedImageAsJPG("reduced_train_images_3/")
     im.saveMaskAsJPG()
 
 validation_dir = "test_images/"
@@ -44,5 +45,5 @@ for index_image in range(n_images):
                                fileName=name_images[index_image],
                                new_size=reduced_size)
 
-    im.saveReducedImageAsJPG("reduced_test_images_2/")
+    im.saveReducedImageAsJPG("reduced_test_images_3/")
 

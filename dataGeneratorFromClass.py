@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow.keras
 import cloudImage
+import albumentations as albu
+import matplotlib.pyplot as plt
 
 class DataGenerator(tensorflow.keras.utils.Sequence):
     'Generates data for Keras'
@@ -12,7 +14,8 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                  shuffle=True,
                  dir_image="reduced_train_images/",
                  dir_mask="reduced_train_masks/",
-                 list_images = []):
+                 list_images = [],
+                 augment=False):
 
         'Initialization'
         self.dim = dim
@@ -24,6 +27,7 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.shuffle = shuffle
         self.on_epoch_end()
         self.list_images = list_images
+        self.augment = augment
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -48,6 +52,26 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
+            
+    def __random_transform(self, img):
+        composition = albu.Compose([
+            albu.HorizontalFlip(),
+            albu.VerticalFlip(),
+            albu.ShiftScaleRotate(rotate_limit=30, shift_limit=.1, p=1.0)
+        ])
+        
+        composed = composition(image=img)
+        aug_img = composed['image']
+        
+        return aug_img
+    
+    def __augment_batch(self, img_batch, masks_batch):
+        for i in range(img_batch.shape[0]):
+            img_batch[i, ] = self.__random_transform(img_batch[i, ])     
+            for j in range(masks_batch.shape[3]):
+                masks_batch[i, :, :, j] = self.__random_transform(masks_batch[i, :, :, j]) 
+            
+        return img_batch, masks_batch
 
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples' # X : (n_samples, *dim)
@@ -64,9 +88,15 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
                                         height=self.dim[0],
                                         width=self.dim[1])
 
-            X[i,:,:] = im.load()
+            X[i,] = im.load()
 
             # Store mask
-            y[i,:,:,:] = im.load(is_mask=True)
+            y[i,] = im.load(is_mask=True)
+            #print("MASK...")
+            #plt.imshow(y[i,:,:,0])
+            #plt.show()
+
+        if self.augment:
+            X, y = self.__augment_batch(X, y)
 
         return X,y
