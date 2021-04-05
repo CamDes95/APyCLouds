@@ -1,21 +1,10 @@
 import pandas as pd
 import numpy as np
-import cloudImage
-import os
-from time import time
 from bce_dice_loss import bce_dice_loss, dice_coef
-import tensorflow as tf
-from tensorflow.keras import callbacks
+from tensorflow import keras
 from model_ResNet import ResNet_model
-
-import numpy as np
-import tensorflow.keras
-import cloudImage
 import dataGeneratorFromClass
-import tensorflow as tf
 import matplotlib.pyplot as plt
-import seaborn as sns
-import cv2
 
 
 #### CHARGEMENT ET MISE EN FORME DONNEES ####
@@ -39,23 +28,24 @@ print(test_imgs)
 
 #name_images_test = sub_df["FileName"].unique()
 
-"""d = dataGenerator.DataGenerator(list_IDs=[0], list_images=name_images, dim=reduced_size, batch_size=1)
-X, y = d.__getitem__(0)"""
+"""
+d = dataGenerator.DataGenerator(list_IDs=[0], list_images=name_images, dim=reduced_size, batch_size=1)
+X, y = d.__getitem__(0)
+"""
 
 
 #### DEFINITION DU MODELE ####
 
 reduced_size = (224,224)
-
 img_h = 224
 img_w = 224
 n_channels = 3
 n_classes = 4
 
-model = ResNet_model(img_h, img_w, n_channels, n_classes = 4)
+model = ResNet_model(img_h, img_w, n_channels, n_classes)
 
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3) 
+optimizer = keras.optimizers.Adam(learning_rate=1e-3) 
 
 model.compile(optimizer=optimizer, loss=bce_dice_loss, metrics=[dice_coef])
 
@@ -72,21 +62,15 @@ val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1100,1300),
                                 dim=reduced_size,
                                 dir_mask="reduced_train_masks/",
                                 batch_size=32)
-"""
-test_gen = dataGeneratorFromClass.DataGenerator(list_IDs = np.arange(3000),
-                                                list_images = name_images_test,
-                                                dim = reduced_size,
-                                                dir_image = "reduced_test_images_256",
-                                                batch_size = 32)
-"""
-TON = callbacks.TerminateOnNaN()
+
+TON = keras.callbacks.TerminateOnNaN()
 
 #### ENTRAINEMENT ####
 
 history = model.fit(data_gen,
                     epochs=5,
                     callbacks=[TON],
-                    validation_data=val_gen) #, callbacks=callbacks)
+                    validation_data=val_gen)
 
 
 # Visualisation loss et dice_coef lors de l'entraînement :
@@ -104,11 +88,10 @@ plt.plot(history.history["val_dice_coef"], label="val dice coef", color="green")
 plt.legend()
 plt.xlabel("epochs")
 plt.ylabel("dice coef")
+plt.savefig('ResNet152V2_loss_4.png')
 plt.show();
 
 # Sauvegarde du modèle et des poids
-model.save('model_ResNet_4.h5')
-model.save_weights("model_weights_ResNet_4.h5")
+model.save('model_ResNet152V2_4.h5')
+model.save_weights("model_weights_ResNet152V2_4.h5")
 
-
-# Performance du modèle sur données test
