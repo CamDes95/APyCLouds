@@ -6,9 +6,8 @@ from time import time
 from bce_dice_loss import bce_dice_loss, dice_coef
 import tensorflow as tf
 from tensorflow.keras import callbacks
-from model_EfficientNetB0 import EfficientNet_model
-from model_EfficientNetB2 import EfficientNetB2_model
-from model_EfficientNetB4 import EfficientNetB4_model
+from model_ResNet import ResNet_model
+
 import numpy as np
 import tensorflow.keras
 import cloudImage
@@ -46,14 +45,14 @@ X, y = d.__getitem__(0)"""
 
 #### DEFINITION DU MODELE ####
 
-reduced_size = (256,256)
+reduced_size = (224,224)
 
-img_h = 256
-img_w = 256
+img_h = 224
+img_w = 224
 n_channels = 3
 n_classes = 4
 
-model = EfficientNetB2_model(img_h, img_w, n_channels, n_classes = 4)
+model = ResNet_model(img_h, img_w, n_channels, n_classes = 4)
 
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3) 
@@ -63,15 +62,15 @@ model.compile(optimizer=optimizer, loss=bce_dice_loss, metrics=[dice_coef])
 
 #### GENERATEUR DE DONNEES ####
 
-data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3000),
+data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1000),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                dir_image="reduced_train_images_256/",
+                                dir_image="reduced_train_images/",
                                 batch_size=32)
-val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3200,4000),
+val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1100,1300),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                dir_mask="reduced_train_masks_256/",
+                                dir_mask="reduced_train_masks/",
                                 batch_size=32)
 """
 test_gen = dataGeneratorFromClass.DataGenerator(list_IDs = np.arange(3000),
@@ -108,8 +107,8 @@ plt.ylabel("dice coef")
 plt.show();
 
 # Sauvegarde du modèle et des poids
-model.save('model_EffNetB0_4_N_imgnet.h5')
-model.save_weights("model_weights_EffNetB0_4_N_imgnet.h5")
+model.save('model_ResNet_4.h5')
+model.save_weights("model_weights_ResNet_4.h5")
 
 
 # Performance du modèle sur données test
