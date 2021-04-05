@@ -1,5 +1,5 @@
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications import ResNet152V2
+from tensorflow.keras.applications import ResNet50V2
 from tensorflow.keras import layers
 
 ################################################################
@@ -12,7 +12,7 @@ def ResNet_model(img_h, img_w, n_channels, n_classes):
 
     inputs = layers.Input(shape=(img_h, img_w, n_channels))
    
-    model = ResNet152V2(weights = "imagenet",   
+    model = ResNet50V2(weights = "imagenet",   
                            include_top = False,
                            input_shape = (img_h, img_w, n_channels))(inputs)
     model.trainable = False
