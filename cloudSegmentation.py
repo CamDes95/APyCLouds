@@ -1,3 +1,6 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import pandas as pd
 import numpy as np
 import dataGeneratorFromClass
@@ -57,13 +60,13 @@ max_valid = int(min(n_train+n_valid, n_images))
 data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(n_train),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                batch_size=4,
+                                batch_size=16,
                                 dir_image="reduced_train_images_3/",
                                 dir_mask="reduced_train_masks_3/")
 val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(n_train, max_valid),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                batch_size=4,
+                                batch_size=16,
                                 dir_image="reduced_train_images_3/",
                                 dir_mask="reduced_train_masks_3/")
 
@@ -80,7 +83,12 @@ def decreasinglrUpdate(epoch, learning_rate):
 lrScheduler = callbacks.LearningRateScheduler(schedule=decreasinglrUpdate,
                                               verbose=1)
 
-history = model.fit_generator(data_gen, epochs=10, callbacks=[TON, lrScheduler], validation_data=val_gen) # , validation_data=val_gen) #, callbacks=callbacks)
-print(history.history['accuracy'])
+# Permet d'enregistrer les modèles tout au long de l'entrainement
+checkpoint = tf.keras.callbacks.ModelCheckpoint(
+    "checkpoints/UNet_{epoch:02d}_{val_dice_coef:.2f}.h5", monitor='val_dice_coef', verbose=1, mode = 'max', save_weights_only=True, save_best_only=False
+)
+
+history = model.fit_generator(data_gen, epochs=5, callbacks=[TON, lrScheduler, checkpoint], validation_data=val_gen) # , validation_data=val_gen) #, callbacks=callbacks)
+
 model.save('model_UNet_2.hdf5')
 

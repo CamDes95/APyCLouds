@@ -1,6 +1,7 @@
 import pandas as pd
 import cloudImage
 from time import time
+from tqdm import tqdm
 import os
 
 reduced_size = [350, 525]  # height x width
@@ -17,7 +18,7 @@ name_images = df_train['FileName'].unique()
 n_images = len(name_images)
 t1 = time()
 
-for index_image in range(n_images):
+for index_image in tqdm(range(n_images)):
     t2 = time()
     if (index_image % 100) == 0:
         print(index_image, str(t2-t1))
@@ -36,7 +37,7 @@ name_images = os.listdir(validation_dir)
 n_images = len(name_images)
 t1 = time()
 
-for index_image in range(n_images):
+for index_image in tqdm(range(n_images)):
     t2 = time()
     if (index_image % 100) == 0:
         print(index_image, str(t2-t1))

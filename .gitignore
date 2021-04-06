@@ -9,3 +9,8 @@
 train.csv
 __pycache__/
 *.hdf5
+*.jpg
+*.h5
+ResNet152V2_loss_4.png
+*.csv
+*.png
