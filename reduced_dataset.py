@@ -2,6 +2,7 @@ import pandas as pd
 import cloudImage
 from time import time
 import os
+from tqdm import tqdm
 
 reduced_size = [224, 224]  # height x width
 
@@ -18,7 +19,8 @@ t1 = time()
 
 
 # Reduced train and masks img size
-for index_image in range(n_images):
+# Ajout de tqdm pour avoir la barre de progression
+for index_image in tqdm(range(n_images)):
     t2 = time()
     if (index_image % 100) == 0:
         print(index_image, str(t2-t1))

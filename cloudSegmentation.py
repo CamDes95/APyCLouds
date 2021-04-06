@@ -1,3 +1,7 @@
+# Enleve tous les messages de debuggage de tensorflow
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import pandas as pd
 import numpy as np
 from bce_dice_loss import bce_dice_loss, dice_coef

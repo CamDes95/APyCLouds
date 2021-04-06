@@ -1,11 +1,14 @@
+# Enleve tous les messages de debuggage de tensorflow
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 import numpy as np
 import cloudImage
 from bce_dice_loss import bce_dice_loss
 
-model = load_model("model_ResNet_4.h5", custom_objects={'loss': bce_dice_loss}, compile=False)
+model = load_model('model_ResNet152V2_4.h5', custom_objects={'loss': bce_dice_loss}, compile=False)
 
 # train images
 directory = "reduced_train_images/"
@@ -20,8 +23,11 @@ for index_image in range(20):
                                mask_path="reduced_train_masks/",
                                fileName=name_images[index_image],
                                height=224, width=224)
-    X = np.expand_dims(im.load(),axis=0)
-    y = model.predict(np.expand_dims(X, axis=3))
+    img = im.load() # shape (224, 224)
+    X = np.expand_dims(img,axis=0) # shape (1, 224, 224)
+    X = np.stack((X,)*3, axis=3) # shape (1, 224, 224, 3)
+    print(X.shape)
+    y = model.predict(X)
     
     fig1 = plt.figure(figsize=(10,8))
     ax1 = plt.subplot(4, 3, 1)
