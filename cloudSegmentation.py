@@ -28,7 +28,7 @@ df_train['PatternId'] = df_train['Image_Label'].apply(lambda col: col.split('_')
 df_train['PatternPresence'] = ~ df_train['EncodedPixels'].isna()
 print(df_train.head())
 
-name_images = df_train['FileName'].unique()
+name_images = df_train['Image'].unique()  # FileName en Image pour AUC ROC
 n_images = len(name_images)
 
 # Importation submission et test img
@@ -46,33 +46,33 @@ X, y = d.__getitem__(0)"""
 
 #### DEFINITION DU MODELE ####
 
-reduced_size = (256,256)
+reduced_size = (224,224)
 
-img_h = 256
-img_w = 256
+img_h = 224
+img_w = 224
 n_channels = 3
 n_classes = 4
 
-model = EfficientNetB2_model(img_h, img_w, n_channels, n_classes = 4)
+model = EfficientNetB4_model(img_h, img_w, n_channels, n_classes = 4)
 
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3) 
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4) 
 
 model.compile(optimizer=optimizer, loss=bce_dice_loss, metrics=[dice_coef])
 
 
 #### GENERATEUR DE DONNEES ####
 
-data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3000),
+data_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(4500),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                dir_image="reduced_train_images_256/",
-                                batch_size=32)
-val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(3200,4000),
+                                dir_image="reduced_train_images_224/",
+                                batch_size=16)
+val_gen = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(4501,5501),
                                 list_images=name_images,
                                 dim=reduced_size,
-                                dir_mask="reduced_train_masks_256/",
-                                batch_size=32)
+                                dir_mask="reduced_train_masks_224/",
+                                batch_size=16)
 """
 test_gen = dataGeneratorFromClass.DataGenerator(list_IDs = np.arange(3000),
                                                 list_images = name_images_test,
@@ -108,8 +108,8 @@ plt.ylabel("dice coef")
 plt.show();
 
 # Sauvegarde du modèle et des poids
-model.save('model_EffNetB0_4_N_imgnet.h5')
-model.save_weights("model_weights_EffNetB0_4_N_imgnet.h5")
+model.save('model_EffNetB0_4_TOP_imgnet.h5')
+model.save_weights("model_weights_EffNetB2_4_TOP_imgnet.h5")
 
 
 # Performance du modèle sur données test
