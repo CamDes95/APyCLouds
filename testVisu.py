@@ -17,7 +17,11 @@ n_images = len(name_images)
 
 for ntime in range(1):
     #input("Press Enter to continue...")
-    d = dataGeneratorFromClass.DataGenerator(list_IDs=np.arange(1), list_images=name_images, dim=reduced_size, batch_size=1,augment=False)
+    d = dataGeneratorFromClass.DataGeneratorFromClass(list_IDs=np.arange(1,3), 
+                                             list_images=name_images, 
+                                             dim=reduced_size,
+                                             batch_size=1,
+                                             augment=True)
     X, y = d.__getitem__(0)
     print(y.shape)
     print((np.squeeze(X)).shape, y.shape)
