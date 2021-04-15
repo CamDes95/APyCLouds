@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  5 18:57:50 2021
+Class used for manage image, build masks, visualize and load mask and clous images, save (resized if any) 
+mask and images
+@author: luc eglin, camille desjardin, toufik saddik
+"""
+
 from PIL import Image, ImageFilter
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,7 +28,6 @@ class cloudImage:
         self.fileNameMaskWithPath = []
         for p in self.patternList:
             self.fileNameMaskWithPath.append(mask_path+fileName.split('.')[0] + '_' + p + '.jpg')
-        self.fileNameTaskWithPath = mask_path + fileName.split('.')[0] + "_task.png"
         # Colors of the masks
         self.ColorList = [[0, 0, 1], [0, 1, 0], [1, 0, 0], [.5, 0, .3]]
         self.boxes = {'pattern': [], 'mask': []}  # masks per class
@@ -82,11 +89,6 @@ class cloudImage:
                     arr = np.where(arr > 1, 1, arr)
                     im_array[:,:,ind] = np.asarray(arr)
 
-        """pil_im = Image.open(self.fileNameTaskWithPath, 'r')
-        arr = np.asarray(pil_im)
-        arr = np.where(arr > 1, 1, arr)
-        if is_mask==True:
-            im_array[:, :, -1] = np.asarray(arr)"""
 
         return im_array
 
@@ -157,6 +159,14 @@ class cloudImage:
         # self.boxes['mask'].append()
 
     def saveMaskAsJPG(self):
+        """
+        Save masks in jpeg format, maybe by resizing them
+
+        Returns 
+        -------
+        None.
+
+        """
         try:
             if not (os.path.isdir(self.mask_path)):
                 # Création répertoire
@@ -177,6 +187,14 @@ class cloudImage:
             im.save(name_image)
 
     def saveReducedImageAsJPG(self, images_dir):
+        """
+        Save images in jpeg format, maybe by resizing them
+
+        Returns 
+        -------
+        None.
+
+        """
         try:
             if not (os.path.isdir(images_dir)):
                 # Création répertoire
