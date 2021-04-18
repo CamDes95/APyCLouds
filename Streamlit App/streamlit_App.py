@@ -177,7 +177,7 @@ if st.sidebar.checkbox("Modélisation"):
 
         st.write("Nous avons 5546 images de taille : (1400*2100). Les images utilisées en entrée du modèle ont été formatées en 224*224")
 
-    if st.checkbox("Dta Generator"):
+    if st.checkbox("Data Generator"):
 
         st.write("Un générateur de données permet de charger l’ensemble des données dans le réseau de neurones via des mini-lots d’images pour éviter de saturer la RAM ou Le GPU de l'ordinateur.")
 
@@ -216,19 +216,19 @@ if st.sidebar.checkbox("Résultats"):
 ######################### PREDICTION ##########################
 
 if st.sidebar.checkbox("Prédiction"):
-    st.title("Prédiction")
+    st.title("Prédiction \n\n\n")
     
     model = load_model("model_efficientnetb2_encoder_weights_imagenet_lr0.001_20epochs_DataAugmentEncoderFreeze_07_0.57.h5", custom_objects={'loss': bce_dice_loss}, compile=False)
 
     directory = "reduced_train_images_224/"
     
-    left, middle, right = st.beta_columns(3)
+    left, right = st.beta_columns(2)
     
     opt = st.selectbox(
         "Image à prédire",
         df_train.FileName.unique())
     path = directory + opt
-    middle.image(path, channels="BGR")
+    left.image(path, channels="BGR", width = 341)
     
     with st.spinner("Image en cours de segmentation..."):
         im = cloudImage.cloudImage(path = "reduced_train_images_224/",
@@ -237,18 +237,16 @@ if st.sidebar.checkbox("Prédiction"):
                                    height = 224,
                                    width = 224)
         X = np.expand_dims(im.load(),axis=0)
-        y = model.predict(np.expand_dims(X, axis=3))
-        
-        masks=np.squeeze(im.load(is_mask=True))
+        y = model.predict(np.expand_dims(X, axis=3))        
         
         patternList = ['Fish', 'Flower', 'Gravel', 'Sugar']
         pattern = st.selectbox(
             "Pattern",
             patternList)
         
-        threshold = st.slider('Choix du seuil de probabilité', min_value=0.0, max_value=1.0, value=0.05)
+        threshold = st.slider('Choix du seuil de probabilité (optimal autour de 0.7)', min_value=0.0, max_value=1.0, value=0.7)
         
-        fig = plt.figure(figsize=(8,8))
+        fig = plt.figure(figsize=(30,30))
         ax = fig.subplots(1,1)
         if pattern == "Fish":
             ax.imshow(np.squeeze(y[0, :, :, 0]>threshold))
@@ -262,8 +260,48 @@ if st.sidebar.checkbox("Prédiction"):
         else:
             ax.imshow(np.squeeze(y[0, :, :, 3]>threshold))
             ax.axis(False)
-        middle.pyplot(fig, width = 250);
-
+        right.pyplot(fig, width = 100);
+        
+    if st.checkbox("Comparaison de la prédiction au masque d'entraînement"):
+        masks=np.squeeze(im.load(is_mask=True))
+        if pattern == "Fish":
+            ax = plt.subplot(1,2,1)
+            ax1 = plt.subplot(1,2,2)
+            ax.imshow(np.squeeze(masks[:, :, 0]))
+            ax1.imshow(np.squeeze(y[0, :, :, 0]>threshold))
+            ax.axis(False)
+            ax1.axis(False)
+            ax.title.set_text("Fish - Mask") 
+            ax1.title.set_text("Fish - Predicted") 
+        elif pattern == "Flower":
+            ax = plt.subplot(1,2,1)
+            ax1 = plt.subplot(1,2,2)
+            ax.imshow(np.squeeze(masks[:, :,1]))
+            ax1.imshow(np.squeeze(y[0, :, :, 1]>threshold))
+            ax.axis(False)
+            ax1.axis(False)
+            ax.title.set_text("Flower - Mask") 
+            ax1.title.set_text("Flower - Predicted") 
+        elif pattern == "Gravel":
+            ax = plt.subplot(1,2,1)
+            ax1 = plt.subplot(1,2,2)
+            ax.imshow(np.squeeze(masks[:, :, 2]))
+            ax1.imshow(np.squeeze(y[0, :, :, 2]>threshold))
+            ax.axis(False)
+            ax1.axis(False)
+            ax.title.set_text("Gravel - Mask") 
+            ax1.title.set_text("Gravel - Predicted") 
+        else:
+            ax = plt.subplot(1,2,1)
+            ax1 = plt.subplot(1,2,2)
+            ax.imshow(np.squeeze(masks[:, :, 3]))
+            ax1.imshow(np.squeeze(y[0, :, :, 3]>threshold))
+            ax.axis(False)
+            ax1.axis(False)
+            ax.title.set_text("Sugar - Mask") 
+            ax1.title.set_text("Sugar - Predicted") 
+        st.pyplot(fig, width = 250);
+        
     
 ######################### APPLICATION NEW DATA ########################## 
    
