@@ -12,13 +12,14 @@ import cloudImage
 import os
 import cv2
 from efficientnet.tfkeras import EfficientNetB4
+import time
 
 
 # Chargement et mise en forme des données
-#@st.cache
+@st.cache(suppress_st_warning=True, allow_output_mutation=True)
 def load_data(nrows):
     df = pd.read_csv("train.csv", nrows=nrows)
-    return df
+    return df;
 df_train = load_data(nrows=22184)
 
 df_train['FileName'] = df_train['Image_Label'].apply(lambda col: col.split('_')[0])
@@ -26,15 +27,26 @@ df_train['PatternId'] = df_train['Image_Label'].apply(lambda col: col.split('_')
 df_train['PatternPresence'] = ~ df_train['EncodedPixels'].isna()
 
 # Barre latérale
+st.markdown(
+    f'''
+    <style>
+        .sidebar .sidebar-content {{
+            width:1000px;
+        }}
+    ''', unsafe_allow_html=True)  # Width de la sidebar
+    
 st.sidebar.header("Menu")
+menu_list = ["Présentation du projet", "Dataset", "Modélisation", "Résultats", "Prédiction", "Application sur de nouvelles données"]
+menu_sel = st.sidebar.radio("", menu_list, index=0, key=None)
 
 ######################### PRESENTATION PROJET ##########################
 
 left, middle, right = st.beta_columns(3)
 middle.title("APyClouds")
 
-if st.sidebar.checkbox("Présentation du projet"):
-    st.image("clouds_sky.jpg", width=600)
+if menu_sel == "Présentation du projet":
+    left, middle, right = st.beta_columns([1,12,1])
+    middle.image("clouds_sky.jpg", width=600)
     
     st.title("Introduction")
     st.write("""Ce projet répond à une compétition mise en ligne sur le site Kaggle :
@@ -48,46 +60,46 @@ if st.sidebar.checkbox("Présentation du projet"):
              compréhension vis à vis du changement climatique global.""")
     st.write("""Au total, quatre formations nuageuses ont été identifiées par les scientifiques : Fish, Flower, Gravel et Sugar.  """)
     
-    st.image("Fish.png")
-    st.write("""Fish : Réseau de nuages sous forme de structures squelettiques allongées qui s'étendent parfois
+    st.subheader("Description des formations nuageuses :")
+    
+    if st.checkbox("Fish"):
+        left, middle, right = st.beta_columns(3)
+        left.image("Fish.png", width= 700)
+        st.write("""Réseau de nuages sous forme de structures squelettiques allongées qui s'étendent parfois
 jusqu'à 1000 km, pour la plupart longitudinalement.""")
 
-    st.image("Flower.png")
-    st.write("""Flower : Nuages stratiformes à grande échelle apparaissant sous forme de « bouquets », séparation
+    if st.checkbox("Flower"):
+        left, middle, right = st.beta_columns(3)
+        left.image("Flower.png", width = 700)
+        st.write(""" Nuages stratiformes à grande échelle apparaissant sous forme de « bouquets », séparation
 nette entre chaque « bouquet ».""")
-    
-    st.image("Gravel.png")
-    st.write("""Gravel : Nuages de caractéristiques granulaires marqués par des arcs ou anneaux.
-La différence entre les formations de type Gravel et Sugar est parfois difficile à identifier.""")
 
-    st.image("Sugar.png")
-    st.write("""Sugar : Zones étendues de nuages très fins ; en cas de fort débit, ils peuvent former de fines «
+    if st.checkbox("Gravel"):
+        left, middle, right = st.beta_columns(3)
+        left.image("Gravel.png", width = 700)
+        st.write(""" Nuages de caractéristiques granulaires marqués par des arcs ou anneaux.
+La différence entre les formations de type Gravel et Sugar est parfois difficile à identifier.""")
+    
+    if st.checkbox("Sugar"):
+        left, middle, right = st.beta_columns(3)
+        left.image("Sugar.png", width=700)
+        st.write("""Zones étendues de nuages très fins ; en cas de fort débit, ils peuvent former de fines «
 veines » ou « plumes » (nuages dentritiques).""")
 
 
-    st.write("Afin de répondre à la problèmatique, nous avons crées un modèle de Deep Learning capable d'identifier les quatres formes de nuages.")
+    st.write("Afin de répondre à la problèmatique posée par les scientifiques de l'Institut Max Planck, nous avons construit un modèle de Deep Learning capable d'identifier les quatres formes de nuages.")
 
-    st.markdown("Problématique")
 
 
 ######################### DATASET ##########################
 
 from cloudImage2 import cloudImage2
+from cloudImage import cloudImage
 from catalogueImage import catalogueImage
 path = "train_images/"
 
-if st.sidebar.checkbox("Dataset"):
-    
-    if st.checkbox("Afficher le jeu de données"):
-        st.write(df_train.head(5))
+if menu_sel == "Dataset":
         
-    if st.checkbox("Informations sur le dataframe"):
-        buffer = io.StringIO()
-        df_train.info(buf=buffer)
-        s = buffer.getvalue()
-        with open(df_train, encoding="utf-8") as f:
-            f.write(s)
-    
     # Exploration des images
     st.subheader("Visualisation des images du jeu de données")
     opt = st.selectbox(
@@ -95,16 +107,8 @@ if st.sidebar.checkbox("Dataset"):
         df_train.FileName.unique())
     path = "train_images/"
     st.image(path + opt)
-
-    
-    
-    # Create a text element and let the reader know the data is loading.
-    data_load_state = st.text('Loading data...')
-    # Load 10,000 rows of data into the dataframe.
-    # Notify the reader that the data was successfully loaded.
-    data_load_state.text('Loading data...done!')
-    
-    st.subheader('Les 10 premiers lignes du dataset')
+ 
+    st.subheader('Les 10 premières lignes du dataset')
     st.dataframe(df_train.head(10))   
     
     st.subheader('Les colonnes du Dataset')
@@ -124,30 +128,32 @@ if st.sidebar.checkbox("Dataset"):
     ax.set_title('Cloud Types');
     st.subheader("Répartition des formes nuageuses dans notre dataset")
     st.pyplot(fig)
-    st.markdown('<p class="style">Nous constatons que la forme Sugar est plus détectée que les autres, Flower étant celle qui est la moins observée par les scientifques </p>', unsafe_allow_html=True)
     
     df = pd.DataFrame([['Sugar',sugar],['Flower',flower],['Gravel',gravel],['Fish',fish]], columns= ['Pattern', 'Count'])
 
-    st.write("Au total, 11836 fomres de nuages ont été identifiées par les scientifiques sur les images d'entraînement")
     if st.checkbox("Afficher le nombre d'images par formes nuageuses identifiées"):
         st.dataframe(df)
 
     if st.checkbox("Afficher les dimensions du dataset"):
         st.write(df_train.shape)
+    
+    st.markdown('<p class="style">Nous constatons que la forme Sugar est plus détectée que les autres, Flower étant celle qui est la moins observée par les scientifiques. </p>', unsafe_allow_html=True)
+    
+    st.write("Au total, 11836 formes de nuages ont été identifiées par les scientifiques sur les images d'entraînement.")    
         
     st.subheader('Visualiser les formes identifiés sur les images (Bounding Box)')
     #slider1 = st.slider("Choix du premier masque", 0, 100, 1)
     #slider2 = st.slider("Choix du deuxième masque", 0, 100, 1)
     #st.write("Masques :", slider1)
     #st.write("Masques :", slider2)
-    viz = catalogueImage(dataFrame = df_train, indexes = range(1, 10))
+    viz = catalogueImage(dataFrame = df_train, indexes = range(1, 4))
     
-    st.write(viz.visualizeCatalogue())
+    st.image(viz.visualizeCatalogue())
     
     
 ######################### MODELISATION ##########################  
   
-if st.sidebar.checkbox("Modélisation"):
+if menu_sel == "Modélisation":
     st.title("Modélisation") 
     st.markdown('<style>.style1{color: blue; font-size:35px}, </style>', unsafe_allow_html=True)
 
@@ -208,14 +214,14 @@ if st.sidebar.checkbox("Modélisation"):
 
 ######################### RESULTATS ##########################
 
-if st.sidebar.checkbox("Résultats"):  
+if menu_sel == "Résultats":  
     st.title("Résultats")
     st.markdown("Présentation des résultats") 
     
 
 ######################### PREDICTION ##########################
 
-if st.sidebar.checkbox("Prédiction"):
+if menu_sel == "Prédiction":
     st.title("Prédiction \n\n\n")
     
     model = load_model("model_efficientnetb2_encoder_weights_imagenet_lr0.001_20epochs_DataAugmentEncoderFreeze_07_0.57.h5", custom_objects={'loss': bce_dice_loss}, compile=False)
@@ -225,24 +231,32 @@ if st.sidebar.checkbox("Prédiction"):
     left, right = st.beta_columns(2)
     
     opt = st.selectbox(
-        "Image à prédire",
+        "Choix de l'image",
         df_train.FileName.unique())
     path = directory + opt
     left.image(path, channels="BGR", width = 341)
     
+    patternList = ['Fish', 'Flower', 'Gravel', 'Sugar']
+    pattern = st.selectbox(
+            "Choix de la forme à observer",
+            patternList)
+    
+    bar = st.progress(0)
+    
     with st.spinner("Image en cours de segmentation..."):
-        im = cloudImage.cloudImage(path = "reduced_train_images_224/",
+        
+        im = cloudImage(path = "reduced_train_images_224/",
                                    mask_path="reduced_train_masks_224/",
                                    fileName = opt,
                                    height = 224,
                                    width = 224)
         X = np.expand_dims(im.load(),axis=0)
-        y = model.predict(np.expand_dims(X, axis=3))        
+        y = model.predict(np.expand_dims(X, axis=3))                
         
-        patternList = ['Fish', 'Flower', 'Gravel', 'Sugar']
-        pattern = st.selectbox(
-            "Pattern",
-            patternList)
+       # for percent in range(100):
+       #    time.sleep(0.03)
+       #     bar.progress(percent+1)
+       # st.success("Segmentation réussie!")
         
         threshold = st.slider('Choix du seuil de probabilité (optimal autour de 0.7)', min_value=0.0, max_value=1.0, value=0.7)
         
@@ -261,6 +275,8 @@ if st.sidebar.checkbox("Prédiction"):
             ax.imshow(np.squeeze(y[0, :, :, 3]>threshold))
             ax.axis(False)
         right.pyplot(fig, width = 100);
+        
+        st.success("Segmentation réussie !")
         
     if st.checkbox("Comparaison de la prédiction au masque d'entraînement"):
         masks=np.squeeze(im.load(is_mask=True))
@@ -300,15 +316,16 @@ if st.sidebar.checkbox("Prédiction"):
             ax1.axis(False)
             ax.title.set_text("Sugar - Mask") 
             ax1.title.set_text("Sugar - Predicted") 
+        plt.rcParams.update({'font.size': 30})
         st.pyplot(fig, width = 250);
         
     
 ######################### APPLICATION NEW DATA ########################## 
    
-if st.sidebar.checkbox("Application sur de nouvelles données"):    
+if menu_sel == "Application sur de nouvelles données":    
     st.subheader("Utilisation du modèle sur de nouvelles données")
     
-    uploaded_file = st.file_uploader("train_images/", type="jpg")
+    uploaded_file = st.file_uploader("", type="jpg")
 
     if uploaded_file is not None:
         # Convert the file to an opencv image.
@@ -328,12 +345,33 @@ if st.sidebar.checkbox("Application sur de nouvelles données"):
     
     
     
-# Ajouter bouton pressoir repo git et FAQ 
-left_column, middle_column, right_column = st.sidebar.beta_columns(3)
-pressed = middle_column.button('GitHub Repository')
+# Ajouter bouton pressoir repo git, Dataset et FAQ 
+st.text("")
+left_column, right_column = st.sidebar.beta_columns(2)
+pressed = left_column.button('GitHub Repository')
+pressed_2 = right_column.button("Kaggle  \n"
+                                "Dataset")
 if pressed:
     right_column.write(wb.open_new_tab("https://github.com/CamDes95/APyCLouds/tree/main"))
 
+if pressed_2:
+    left_column.write(wb.open_new_tab('https://www.kaggle.com/c/understanding_cloud_organization/data'))
+
+
+linkedin_profile = ["https://fr.linkedin.com/in/camille-desjardin-82842b122",
+                    "https://fr.linkedin.com/in/toufik-saddik-b2131640",
+                    "https://fr.linkedin.com/in/luceglin" ]
+
+st.sidebar.markdown("## About us")
+st.sidebar.info("Projet segmentation de régions nuageuses - Avril 2021  \n\n"
+                "__________________  \n"
+                "Luc EGLIN {}   \n"
+                "Camille DESJARDIN {}   \n"
+                "Toufik SADDIK {}".format(linkedin_profile[2],linkedin_profile[0],linkedin_profile[1]))
+
+
+
+#FAQ
 expander = st.beta_expander("FAQ")
 expander.write("Here you could put in some really, really long explanations...")    
     
