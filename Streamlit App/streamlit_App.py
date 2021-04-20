@@ -17,14 +17,19 @@ import time
 
 # Chargement et mise en forme des données
 @st.cache(suppress_st_warning=True, allow_output_mutation=True)
-def load_data(nrows):
-    df = pd.read_csv("train.csv", nrows=nrows)
+def load_data(csv, nrows):
+    df = pd.read_csv(csv , nrows=nrows)
     return df;
-df_train = load_data(nrows=22184)
+df_train = load_data(csv = "train.csv", nrows=22184)
 
 df_train['FileName'] = df_train['Image_Label'].apply(lambda col: col.split('_')[0])
 df_train['PatternId'] = df_train['Image_Label'].apply(lambda col: col.split('_')[1])
 df_train['PatternPresence'] = ~ df_train['EncodedPixels'].isna()
+
+sub_df = load_data(csv = 'sample_submission.csv', nrows =14792 )
+sub_df['ImageID'] = sub_df['Image_Label'].apply(lambda x: x.split('_')[0])
+
+test_imgs = pd.DataFrame(sub_df['ImageID'].unique(), columns=['ImageID'])
 
 # Barre latérale
 st.markdown(
@@ -42,13 +47,14 @@ menu_sel = st.sidebar.radio("", menu_list, index=0, key=None)
 ######################### PRESENTATION PROJET ##########################
 
 left, middle, right = st.beta_columns(3)
-middle.title("APyClouds")
+st.markdown('<style>.style1{color: black; font-size:50px; font-weight:bold}, </style>', unsafe_allow_html=True)
+middle.markdown('<p class="style1"> APyClouds </p>',  unsafe_allow_html=True)
 
 if menu_sel == "Présentation du projet":
     left, middle, right = st.beta_columns([1,12,1])
     middle.image("clouds_sky.jpg", width=600)
     
-    st.title("Introduction")
+    st.subheader("Introduction")
     st.write("""Ce projet répond à une compétition mise en ligne sur le site Kaggle :
                 Understanding Clouds from Satellites Images.""")
     st.write("""Les scientifiques de l'institut Max Plack de Météorologie développent et analysent 
@@ -87,7 +93,7 @@ La différence entre les formations de type Gravel et Sugar est parfois difficil
 veines » ou « plumes » (nuages dentritiques).""")
 
 
-    st.write("Afin de répondre à la problèmatique posée par les scientifiques de l'Institut Max Planck, nous avons construit un modèle de Deep Learning capable d'identifier les quatres formes de nuages.")
+    st.write("Afin de répondre à la problèmatique posée par les scientifiques de l'Institut Max Planck, nous avons construit un modèle de Deep Learning capable d'identifier les quatre formes de nuages.")
 
 
 
@@ -148,67 +154,46 @@ if menu_sel == "Dataset":
     #st.write("Masques :", slider2)
     viz = catalogueImage(dataFrame = df_train, indexes = range(1, 4))
     
-    st.image(viz.visualizeCatalogue())
+    st.write(viz.visualizeCatalogue())
     
     
 ######################### MODELISATION ##########################  
   
 if menu_sel == "Modélisation":
-    st.title("Modélisation") 
-    st.markdown('<style>.style1{color: blue; font-size:35px}, </style>', unsafe_allow_html=True)
-
-    st.markdown('<p class="style1">Modelisation Encoder-Decoder </p>', unsafe_allow_html=True)
-
-
+    st.markdown('<style>.stylex{color: black; font-size:35px}, </style>', unsafe_allow_html=True)
+    st.markdown('<p class="stylex">Modelisation Encoder-Decoder </p>', unsafe_allow_html=True)
 
     st.markdown('<style>.style2{color: black; font-size:25px}, </style>', unsafe_allow_html=True)
-
     st.markdown('<p class="style2">Schéma type du processus à implémenter. </p>', unsafe_allow_html=True)
-
     st.image('demarche.png', width=600)
 
-
-
     st.markdown('<style> .text{color: black; font-size:22px}</style>', unsafe_allow_html=True)
-
     st.markdown('<p class="text">Nous allons développer un modèle de Deep Learning en utilisant le Transfer Learning et un réseau de neurone convolutif (CNN),  qui va détecter les quatre types de formations nuageuses.</p>',unsafe_allow_html=True)
-
     st.text("")
-
     st.image('cnn.png', width=600)
 
-
-
     if st.checkbox("Image inputs"):
-
         st.write("Nous avons 5546 images de taille : (1400*2100). Les images utilisées en entrée du modèle ont été formatées en 224*224")
 
     if st.checkbox("Data Generator"):
-
         st.write("Un générateur de données permet de charger l’ensemble des données dans le réseau de neurones via des mini-lots d’images pour éviter de saturer la RAM ou Le GPU de l'ordinateur.")
 
     if st.checkbox("Image batchs"):
-
         st.write("Les lots d'images qui vont être traités par notre modèle (batch size = 16.")
 
     if st.checkbox("Data Augmentation"):
-
         st.write("Les techniques d’augmentation de données permettent d’accroître la diversité de notre jeu d’entraînement en appliquant des transformations aléatoires sur les images.")
 
     if st.checkbox("Encoder"):
-
         st.write("Un modèle CNN pré-entraîné (UNet, EfficientNet, ResNet, DenseNet) qui va compresser l'information.")
 
     if st.checkbox("Decoder"):
-
         st.write("un modèle CNN qui va convertir la sortie de l’encodeur et reconstruire l’image sous forme de classes.")
 
     if st.checkbox("Classification"):
-
         st.write("La couche de sortie correspond à une classification multi-classes par pixels. La fonction d'activation 'Softmax' permet de récupèrer les probabilités d'appartenance des pixels à chaque classe.")
 
     st.markdown("<h2>Entraînement</h2>", unsafe_allow_html=True)
-
     st.markdown("<p>Nous avons entraînés plusieurs modèles afin de déterminer le plus stable et possèdant la meilleure performance. Les résultats de ces entraînements sont indiqués dans la partie suivante </p>", unsafe_allow_html=True)
     
 
@@ -222,42 +207,190 @@ if menu_sel == "Résultats":
 ######################### PREDICTION ##########################
 
 if menu_sel == "Prédiction":
-    st.title("Prédiction \n\n\n")
+    st.subheader("Prédiction   \n\n")
     
     model = load_model("model_efficientnetb2_encoder_weights_imagenet_lr0.001_20epochs_DataAugmentEncoderFreeze_07_0.57.h5", custom_objects={'loss': bce_dice_loss}, compile=False)
 
-    directory = "reduced_train_images_224/"
+    images_list = ["Images d'entraînement", "Images test"]
+    images_sel = st.radio("", images_list, index=0, key=None)
     
-    left, right = st.beta_columns(2)
+    patternList = ['Fish', 'Flower', 'Gravel', 'Sugar']    
+    # TRAIN IMAGES
     
-    opt = st.selectbox(
+    if images_sel == "Images d'entraînement":
+        
+        directory = "reduced_train_images_224/"
+        left, right = st.beta_columns(2)
+        opt = st.selectbox("Choix de l'image", df_train.FileName.unique())
+        path = directory + opt
+        left.image(path, channels="BGR", width = 341)
+        
+        
+        with st.spinner("Image en cours de segmentation..."):
+        
+            im = cloudImage(path = "reduced_train_images_224/",
+                                       mask_path="reduced_train_masks_224/",
+                                       fileName = opt,
+                                       height = 224,
+                                       width = 224)
+            X = np.expand_dims(im.load(),axis=0)
+            y = model.predict(np.expand_dims(X, axis=3))                
+            
+           # for percent in range(100):
+           #    time.sleep(0.03)
+           #     bar.progress(percent+1)
+           # st.success("Segmentation réussie!")
+           
+            pattern = st.selectbox("Choix de la forme à observer", patternList)
+
+            threshold = st.slider('Choix du seuil de probabilité (optimal autour de 0.7)', min_value=0.0, max_value=1.0, value=0.7)
+            
+            fig = plt.figure(figsize=(30,30))
+            ax = fig.subplots(1,1)
+            if pattern == "Fish":
+                ax.imshow(np.squeeze(y[0, :, :, 0]>threshold))
+                ax.axis(False)
+            elif pattern == "Flower":
+                ax.imshow(np.squeeze(y[0, :, :, 1]>threshold))
+                ax.axis(False)
+            elif pattern == "Gravel":
+                ax.imshow(np.squeeze(y[0, :, :, 2]>threshold))
+                ax.axis(False)
+            else:
+                ax.imshow(np.squeeze(y[0, :, :, 3]>threshold))
+                ax.axis(False)
+            right.pyplot(fig, width = 100);
+            
+            st.success("Segmentation réussie !")
+            
+        if st.checkbox("Comparaison de la prédiction au masque d'entraînement"):
+            masks=np.squeeze(im.load(is_mask=True))
+            if pattern == "Fish":
+                ax = plt.subplot(1,2,1)
+                ax1 = plt.subplot(1,2,2)
+                ax.imshow(np.squeeze(masks[:, :, 0]))
+                ax1.imshow(np.squeeze(y[0, :, :, 0]>threshold))
+                ax.axis(False)
+                ax1.axis(False)
+                ax.title.set_text("Fish - Mask") 
+                ax1.title.set_text("Fish - Predicted") 
+            elif pattern == "Flower":
+                ax = plt.subplot(1,2,1)
+                ax1 = plt.subplot(1,2,2)
+                ax.imshow(np.squeeze(masks[:, :,1]))
+                ax1.imshow(np.squeeze(y[0, :, :, 1]>threshold))
+                ax.axis(False)
+                ax1.axis(False)
+                ax.title.set_text("Flower - Mask") 
+                ax1.title.set_text("Flower - Predicted") 
+            elif pattern == "Gravel":
+                ax = plt.subplot(1,2,1)
+                ax1 = plt.subplot(1,2,2)
+                ax.imshow(np.squeeze(masks[:, :, 2]))
+                ax1.imshow(np.squeeze(y[0, :, :, 2]>threshold))
+                ax.axis(False)
+                ax1.axis(False)
+                ax.title.set_text("Gravel - Mask") 
+                ax1.title.set_text("Gravel - Predicted") 
+            else:
+                ax = plt.subplot(1,2,1)
+                ax1 = plt.subplot(1,2,2)
+                ax.imshow(np.squeeze(masks[:, :, 3]))
+                ax1.imshow(np.squeeze(y[0, :, :, 3]>threshold))
+                ax.axis(False)
+                ax1.axis(False)
+                ax.title.set_text("Sugar - Mask") 
+                ax1.title.set_text("Sugar - Predicted") 
+            plt.rcParams.update({'font.size': 30})
+            st.pyplot(fig, width = 250);
+    
+    # TEST IMAGES
+    if images_sel == "Images test":
+        
+        left, right = st.beta_columns(2)
+        directory1 = "reduced_test_images_224/"
+        opt1 = st.selectbox(
+        "Choix de l'image",
+        test_imgs)
+        path1 = directory1 + opt1
+        left.image(path1, channels="BGR", width = 341)
+
+        with st.spinner("Image en cours de segmentation..."):
+            
+            im = cloudImage(path = "reduced_test_images_224/",
+                                       fileName = opt1,
+                                       height = 224,
+                                       width = 224)
+            X = np.expand_dims(im.load(),axis=0)
+            y = model.predict(np.expand_dims(X, axis=3))                        
+            
+            pattern = st.selectbox("Choix de la forme à observer", patternList)
+            threshold = st.slider('Choix du seuil de probabilité (optimal autour de 0.7)', min_value=0.0, max_value=1.0, value=0.7)
+            
+            fig = plt.figure(figsize=(30,30))
+            ax = fig.subplots(1,1)
+            if pattern == "Fish":
+                ax.imshow(np.squeeze(y[0, :, :, 0]>threshold))
+                ax.axis(False)
+            elif pattern == "Flower":
+                ax.imshow(np.squeeze(y[0, :, :, 1]>threshold))
+                ax.axis(False)
+            elif pattern == "Gravel":
+                ax.imshow(np.squeeze(y[0, :, :, 2]>threshold))
+                ax.axis(False)
+            else:
+                ax.imshow(np.squeeze(y[0, :, :, 3]>threshold))
+                ax.axis(False)
+            right.pyplot(fig, width = 100);
+            
+            st.success("Segmentation réussie !")
+ 
+    
+######################### APPLICATION NEW DATA ########################## 
+   
+if menu_sel == "Application sur de nouvelles données":    
+    st.subheader("Utilisation du modèle sur de nouvelles données")
+    
+    model = load_model("model_efficientnetb2_encoder_weights_imagenet_lr0.001_20epochs_DataAugmentEncoderFreeze_07_0.57.h5", custom_objects={'loss': bce_dice_loss}, compile=False)
+    
+    
+    images_list = ["Images d'entraînement", "Images test"]
+    images_sel = st.radio("", images_list, index=0, key=None)
+    
+    if images_sel == "Images d'entraînement":
+        directory = "reduced_train_images_224/"
+        opt = st.selectbox(
         "Choix de l'image",
         df_train.FileName.unique())
-    path = directory + opt
-    left.image(path, channels="BGR", width = 341)
+        path = directory + opt
+        st.image(path, channels="BGR", width = 341)
+
+    if images_sel == "Images test":
+        directory1 = "reduced_test_images_224/"
+        opt1 = st.selectbox(
+        "Choix de l'image",
+        test_imgs)
+        path1 = directory1 + opt1
+        st.image(path1, channels="BGR", width = 341)
     
+    
+    uploaded_file = st.file_uploader("", type=["jpg","png","jpeg"])
+
+    if uploaded_file is not None:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        opencv_image = cv2.imdecode(file_bytes, 1)
+        img_resized = np.resize(np.asarray(opencv_image), (224,224))
+
+        st.image(img_resized)
+
     patternList = ['Fish', 'Flower', 'Gravel', 'Sugar']
-    pattern = st.selectbox(
-            "Choix de la forme à observer",
-            patternList)
-    
-    bar = st.progress(0)
+    pattern = st.selectbox("Choix de la forme à observer", patternList)
     
     with st.spinner("Image en cours de segmentation..."):
         
-        im = cloudImage(path = "reduced_train_images_224/",
-                                   mask_path="reduced_train_masks_224/",
-                                   fileName = opt,
-                                   height = 224,
-                                   width = 224)
-        X = np.expand_dims(im.load(),axis=0)
-        y = model.predict(np.expand_dims(X, axis=3))                
-        
-       # for percent in range(100):
-       #    time.sleep(0.03)
-       #     bar.progress(percent+1)
-       # st.success("Segmentation réussie!")
-        
+        X = img_resized
+        y = model.predict(X)                
+
         threshold = st.slider('Choix du seuil de probabilité (optimal autour de 0.7)', min_value=0.0, max_value=1.0, value=0.7)
         
         fig = plt.figure(figsize=(30,30))
@@ -277,66 +410,6 @@ if menu_sel == "Prédiction":
         right.pyplot(fig, width = 100);
         
         st.success("Segmentation réussie !")
-        
-    if st.checkbox("Comparaison de la prédiction au masque d'entraînement"):
-        masks=np.squeeze(im.load(is_mask=True))
-        if pattern == "Fish":
-            ax = plt.subplot(1,2,1)
-            ax1 = plt.subplot(1,2,2)
-            ax.imshow(np.squeeze(masks[:, :, 0]))
-            ax1.imshow(np.squeeze(y[0, :, :, 0]>threshold))
-            ax.axis(False)
-            ax1.axis(False)
-            ax.title.set_text("Fish - Mask") 
-            ax1.title.set_text("Fish - Predicted") 
-        elif pattern == "Flower":
-            ax = plt.subplot(1,2,1)
-            ax1 = plt.subplot(1,2,2)
-            ax.imshow(np.squeeze(masks[:, :,1]))
-            ax1.imshow(np.squeeze(y[0, :, :, 1]>threshold))
-            ax.axis(False)
-            ax1.axis(False)
-            ax.title.set_text("Flower - Mask") 
-            ax1.title.set_text("Flower - Predicted") 
-        elif pattern == "Gravel":
-            ax = plt.subplot(1,2,1)
-            ax1 = plt.subplot(1,2,2)
-            ax.imshow(np.squeeze(masks[:, :, 2]))
-            ax1.imshow(np.squeeze(y[0, :, :, 2]>threshold))
-            ax.axis(False)
-            ax1.axis(False)
-            ax.title.set_text("Gravel - Mask") 
-            ax1.title.set_text("Gravel - Predicted") 
-        else:
-            ax = plt.subplot(1,2,1)
-            ax1 = plt.subplot(1,2,2)
-            ax.imshow(np.squeeze(masks[:, :, 3]))
-            ax1.imshow(np.squeeze(y[0, :, :, 3]>threshold))
-            ax.axis(False)
-            ax1.axis(False)
-            ax.title.set_text("Sugar - Mask") 
-            ax1.title.set_text("Sugar - Predicted") 
-        plt.rcParams.update({'font.size': 30})
-        st.pyplot(fig, width = 250);
-        
-    
-######################### APPLICATION NEW DATA ########################## 
-   
-if menu_sel == "Application sur de nouvelles données":    
-    st.subheader("Utilisation du modèle sur de nouvelles données")
-    
-    uploaded_file = st.file_uploader("", type="jpg")
-
-    if uploaded_file is not None:
-        # Convert the file to an opencv image.
-        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-        opencv_image = cv2.imdecode(file_bytes, 1)
-        
-        # Now do something with the image! For example, let's display it:
-        st.image(opencv_image, channels="BGR")
-        
-        ## Convertir image en 224*224
-    
     
     
     
