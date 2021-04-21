@@ -8,7 +8,7 @@ import numpy as np
 import cloudImage
 from bce_dice_loss import bce_dice_loss
 
-model = load_model('model_ResNet152V2_4.h5', custom_objects={'loss': bce_dice_loss}, compile=False)
+model = load_model('model_ResNet50V2_3_30_4500.h5', custom_objects={'loss': bce_dice_loss}, compile=False)
 
 # train images
 directory = "reduced_train_images/"
